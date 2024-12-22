@@ -20,29 +20,14 @@ Below is the list of docker images available by PHP versions:
 
 | PHP version | Docker image tags                                                                        |
 |-------------|------------------------------------------------------------------------------------------|
-| PHP 8.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.4-alpine` |
-| PHP 8.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.3-alpine`                                          |
-| PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.2-alpine`                                          |
-| PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.1-alpine`                                          |
-| PHP 8.0     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.0-alpine`                                          |
-| PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php7.4-alpine`                                          |
-| PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php7.3-alpine`                                          |
-| PHP 7.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php7.2-alpine`                                          |
-
-## Application Setup
-
-* Webui can be found at http://\<your-ip\>:8096
-* More information can be found on the official documentation.
-
-## Hardware Acceleration
-
-Many desktop applications need access to a GPU to function properly and even some Desktop Environments have compositor effects that will not function without a GPU. However this is not a hard requirement and all base images will function without a video device mounted into the container.
-
-For Intel/ATI/AMD to leverage hardware acceleration you will need to mount /dev/dri video device inside of the container.
-```
---device=/dev/dri:/dev/dri
-```
-I will automatically ensure the jellyfin user inside of the container has the proper permissions to access this device.
+| PHP 8.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.4.2` |
+| PHP 8.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.3.15`                                          |
+| PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.2.27`                                          |
+| PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php8.1.31`                                          |
+| PHP 8.0     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php8.0.30`                                          |
+| PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php7.4.33`                                          |
+| PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php7.3.33`                                          |
+| PHP 7.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php7.2.34`                                          |
 
 ## Usage
 
@@ -53,59 +38,84 @@ To help you get started creating a container from this image you can either use 
 ```
 services:
   jellyfin:
-    container_name: Jellyfin
-    image: registry.cn-chengdu.aliyuncs.com/clion/jellyfin:latest
+    container_name: Phpdever
+    image: registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest
     environment:
       - UMASK=022
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Shanghai
-      - JELLYFIN_PublishedServerUrl=192.168.0.5 #optional
     ports:
-      - 8096:8096
-      - 8920:8920 #optional
-      - 7359:7359/udp #optional
-      - 1900:1900/udp #optional
+      - 9090:9000
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /path/to/jellyfin/library:/config
-      - /path/to/media:/media/nas
+      - /path/to/config:/config
     restart: unless-stopped
 ```
 
 ### Docker cli
 ```
 docker run -d \
-  --name=Jellyfin \
+  --name=Phpdever \
   -e UMASK=022 \
   -e PUID=1000 \
   -e PGID=1000 \
   -e TZ=Asia/Shanghai \
-  -e JELLYFIN_PublishedServerUrl=192.168.0.5 `#optional` \
-  -p 8096:8096 \
-  -p 8920:8920 `#optional` \
-  -p 7359:7359/udp `#optional` \
-  -p 1900:1900/udp `#optional` \
+  -p 9090:9000 \
   -v /path/to/config:/config \
-  -v /path/to/media:/media/nas \
   -v /etc/localtime:/etc/localtime:ro \
   --restart unless-stopped \
-  registry.cn-chengdu.aliyuncs.com/clion/jellyfin:latest
+  registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest
 ```
 ## Parameters
 
-Containers are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate <external>:<internal> respectively. For example, -p 8080:80 would expose port 80 from inside the container to be accessible from the host's IP on port 8080 outside the container.
+Containers are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate <external>:<internal> respectively. For example, -p 9090:9000 would expose port 9000 from inside the container to be accessible from the host's IP on port 9090 outside the container.
 
-* ```-p 8096``` Http webUI.
-* ```-p 8920``` Optional - Https webUI (you need to set up your own certificate).
-* ```-p 7359/udp``` Optional - Allows clients to discover Jellyfin on the local network.
-* ```-p 1900/udp``` Optional - Service discovery used by DNLA and clients.
-* ```-e PUID=1000``` for UserID - see below for explanation.
-* ```-e PUID=1000``` for GroupID - see below for explanation.
-* ```-e TZ=Asia/Shanghai``` specify a timezone to use in your local area.
-* ```-e JELLYFIN_PublishedServerUrl=192.168.0.5``` Set the autodiscovery response domain or IP address.
-* ```-v /config``` Jellyfin data storage location. This can grow very large, 50gb+ is likely for a large collection.
-* ```-v /media/nas``` Media goes here. Add as many as needed e.g. /media/nas/movies, /media/nas/tv, etc.
+* -v /config	Contains your www content and all relevant configuration files.
+* -e PUID=1000	for UserID - see below for explanation
+* -e PGID=1000	for GroupID - see below for explanation
+* -e TZ="Asia/Shanghai" specify a timezone to use.
+
+### Use components
+Inside the container, you can run any tool you need from any working directory.<br>
+Global vendor binaries are added to the PATH environment.
+
+#### Composer
+```shell
+composer --help
+```
+#### PHP Unit
+```shell
+simple-phpunit --help
+```
+#### Rector
+```shell
+rector --help
+```
+#### PHPStan
+```shell
+phpstan --help
+```
+#### Psalm
+```shell
+psalm --help
+```
+#### PHP Code sniffer
+```shell
+phpcs --help
+```
+#### PHP Coding Standards Fixer
+```shell
+php-cs-fixer --help
+```
+#### PHP Mess Detector
+```shell
+phpmd --help
+```
+#### PHP Copy Past Detector
+```shell
+phpcpd --help
+```
 
 ## Umask for running applications
 
@@ -116,3 +126,15 @@ For all of my images I provide the ability to override the default umask setting
 When using volumes (-v flags), permissions issues can arise between the host OS and the container, we avoid this issue by allowing you to specify the user PUID and group PGID.
 
 Ensure any volume directories on the host are owned by the same user you specify and any permissions issues will vanish like magic.
+
+## References
+* [PHP Unit supported versions](https://phpunit.de/supported-versions.html)
+* [Xdebug compatibility](https://xdebug.org/docs/compat)
+* [PHP Unit](https://symfony.com/doc/current/components/phpunit_bridge.html)
+* [Rector](https://packagist.org/packages/rector/rector)
+* [PHPStan](https://phpstan.org/)
+* [Psalm](https://psalm.dev/docs/)
+* [PHP CS](https://github.com/squizlabs/PHP_CodeSniffer/wiki)
+* [PHP Coding Standards Fixer](https://cs.symfony.com/)
+* [PHP Mess Detector](https://phpmd.org/)
+* [PHP Copy Past detector](https://github.com/sebastianbergmann/phpcpd)
