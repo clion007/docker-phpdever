@@ -62,9 +62,9 @@ jobs:
           PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
         tags: |
           clion007/Phpdever:latest
-          clion007/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
+          clion007/Phpdever:v${{ steps.getVersion.outputs.PhpVersion }}
           registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest
-          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
+          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:${{ steps.getVersion.outputs.PhpVersion }}
 
     - name: Get Release Body
       id: getBody
@@ -78,7 +78,7 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         name: Phpdever v${{ steps.getVersion.outputs.PhpVersion }}
-        tag: PHP-v${{ steps.getVersion.outputs.PhpVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
+        tag: v${{ steps.getVersion.outputs.PhpVersion }}
         body: ${{ steps.getBody.outputs.BodyInfo }}
         skipIfReleaseExists: true
         
