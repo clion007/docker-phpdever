@@ -59,33 +59,27 @@ jobs:
         context: .
         push: true
         build-args: |
-          # DOTNET_VERSION=${{ steps.getVersion.outputs.dotnetVersion }}
           COMPOSER_VERSION=${{ steps.getVersion.outputs.composerVersion }}
           PHP_VERSION=${{ steps.getVersion.outputs.PhpdeverVersion }}
         tags: |
           clion007/Phpdever:latest
-          clion007/Phpdever:${{ steps.getVersion.outputs.PhpdeverVersion }}
+          clion007/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpdeverVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
           registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest
-          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:${{ steps.getVersion.outputs.PhpdeverVersion }}
+          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpdeverVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
 
     - name: Get Release Body
       id: getBody
       if: steps.build.outcome == 'success'
       run: |
-        # CHANGES=$(curl -fsSL https://github.com/Phpdever/Phpdever/releases/latest | grep "<li>" | sed '/<li>$/d')
-        # BODYINFO="<h3>Changes</h3><ul>${CHANGES}</ul>"
-        BODYINFO="Changes for details can view in offical link https://github.com/Phpdever/Phpdever/releases/latest"
-        # echo "BodyInfo<<EOF" >> $GITHUB_OUTPUT
-        # echo "$BODYINFO" >> $GITHUB_OUTPUT
-        # echo "EOF" >> $GITHUB_OUTPUT
+        BODYINFO="Changes for detail can view in offical link https://www.php.net/ChangeLog-$(echo ${{ steps.getVersion.outputs.PhpdeverVersion }} | awk -F "." '{printf $1}').php and https://getcomposer.org/changelog/${{ steps.getVersion.outputs.composerVersion }}"
         echo "BodyInfo=$BODYINFO" >> $GITHUB_OUTPUT
       
     - name: Publish Release
       if: steps.build.outcome == 'success'
       uses: ncipollo/release-action@v1
       with:
-        name: Phpdever Server v${{ steps.getVersion.outputs.PhpdeverVersion }}
-        tag: v${{ steps.getVersion.outputs.PhpdeverVersion }}
+        name: Phpdever v${{ steps.getVersion.outputs.PhpdeverVersion }}
+        tag: PHP-v${{ steps.getVersion.outputs.PhpdeverVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
         body: ${{ steps.getBody.outputs.BodyInfo }}
         skipIfReleaseExists: true
         
