@@ -29,7 +29,7 @@ jobs:
         else
           PHP_VERSION=${{ inputs.PHP_VERSION }}
         fi
-        echo "PhpdeverVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
+        echo "PhpVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
         if [ -z ${{ inputs.COMPOSER_VERSION }} ]; then
           COMPOSER_VERSION=$(wget -qO- -t1 -T2 https://getcomposer.org/ | grep "Latest" | awk -F ">" '{printf $3}' | awk -F "<" '{printf $1}')
         else
@@ -59,26 +59,26 @@ jobs:
         push: true
         build-args: |
           COMPOSER_VERSION=${{ steps.getVersion.outputs.composerVersion }}
-          PHP_VERSION=${{ steps.getVersion.outputs.PhpdeverVersion }}
+          PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
         tags: |
           clion007/Phpdever:latest
-          clion007/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpdeverVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
+          clion007/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
           registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest
-          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpdeverVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
+          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:PHP-v${{ steps.getVersion.outputs.PhpVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
 
     - name: Get Release Body
       id: getBody
       if: steps.build.outcome == 'success'
       run: |
-        BODYINFO="Changes for detail can view in offical link https://www.php.net/ChangeLog-$(echo ${{ steps.getVersion.outputs.PhpdeverVersion }} | awk -F "." '{printf $1}').php and https://getcomposer.org/changelog/${{ steps.getVersion.outputs.composerVersion }}"
+        BODYINFO="Changes for detail can view in offical link https://www.php.net/ChangeLog-$(echo ${{ steps.getVersion.outputs.PhpVersion }} | awk -F "." '{printf $1}').php and https://getcomposer.org/changelog/${{ steps.getVersion.outputs.composerVersion }}"
         echo "BodyInfo=$BODYINFO" >> $GITHUB_OUTPUT
       
     - name: Publish Release
       if: steps.build.outcome == 'success'
       uses: ncipollo/release-action@v1
       with:
-        name: Phpdever v${{ steps.getVersion.outputs.PhpdeverVersion }}
-        tag: PHP-v${{ steps.getVersion.outputs.PhpdeverVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
+        name: Phpdever v${{ steps.getVersion.outputs.PhpVersion }}
+        tag: PHP-v${{ steps.getVersion.outputs.PhpVersion }}-Composer-v${{ steps.getVersion.outputs.composerVersion }}
         body: ${{ steps.getBody.outputs.BodyInfo }}
         skipIfReleaseExists: true
         

@@ -1,8 +1,33 @@
-# clion/jellyfin
+# Phpdever Docker Image
+[![Build](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml)
+[![License](https://img.shields.io/github/license/clion007/docker-phpdever)](https://github.com/clion007/docker-phpdever/blob/main/LICENSE)
+![GitHub top language](https://img.shields.io/github/languages/top/clion007/docker-phpdever)
+[![Packages retention policy](https://github.com/clion007/docker-phpdever/actions/workflows/packages-retention-policy.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/packages-retention-policy.yaml)
 
-Jellyfin is a Free Software Media System that puts you in control of managing and streaming your media. It is an alternative to the proprietary Emby and Plex, to provide media from a dedicated server to end-user devices via multiple apps. Jellyfin is descended from Emby's 3.5.2 release and ported to the .NET Core framework to enable full cross-platform support. There are no strings attached, no premium licenses or features, and no hidden agendas: just a team who want to build something better and work together to achieve it.
+This repository is a docker image based on official php, composer and alpine docker images to help you to build and test your PHP projects with different PHP version.<br>
+This docker image contains a necessary tools you need to analyze and test your PHP project
+* xdebug
+* phpunit
+* rector
+* phpstan
+* psalm
+* phpcs
+* php-cs-fixer
+* phpmd
+* phpcpd (available from php 7.3 version)
 
-This clion/jellyfin docker image supply you a better choice for the jellyfin container than offical image. It is builded base on latest alpine, with smaller size and fix the ffmpg decode, hardware drivers and chinese shown in garbled problems et,al. This image will auto check and update when there is new version of jellyfin exist.
+Below is the list of docker images available by PHP versions:
+
+| PHP version | Docker image tags                                                                        |
+|-------------|------------------------------------------------------------------------------------------|
+| PHP 8.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.4-alpine` |
+| PHP 8.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.3-alpine`                                          |
+| PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.2-alpine`                                          |
+| PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.1-alpine`                                          |
+| PHP 8.0     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php8.0-alpine`                                          |
+| PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php7.4-alpine`                                          |
+| PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php7.3-alpine`                                          |
+| PHP 7.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v2-php7.2-alpine`                                          |
 
 ## Application Setup
 
