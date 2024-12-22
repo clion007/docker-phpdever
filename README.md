@@ -109,7 +109,6 @@ Containers are configured using parameters passed at runtime (such as those abov
 *    php-xmlreader
 *    php-xsl
 
-
 ### Use components
 Inside the container, you can run any tool you need from any working directory.<br>
 Global vendor binaries are added to the PATH environment.
