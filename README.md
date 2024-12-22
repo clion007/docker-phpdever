@@ -25,9 +25,9 @@ Below is the list of docker images available by PHP versions:
 | PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.2.27`                                          |
 | PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php8.1.31`                                          |
 | PHP 8.0     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php8.0.30`                                          |
-| PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php7.4.33`                                          |
-| PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php7.3.33`                                          |
-| PHP 7.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php7.2.34`                                          |
+| PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php.4.33`                                          |
+| PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php.3.33`                                          |
+| PHP 7.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php.2.34`                                          |
 
 ## Usage
 
@@ -75,6 +75,40 @@ Containers are configured using parameters passed at runtime (such as those abov
 * -e PUID=1000	for UserID - see below for explanation
 * -e PGID=1000	for GroupID - see below for explanation
 * -e TZ="Asia/Shanghai" specify a timezone to use.
+
+## PHP Modules installed
+*    php-common
+*    php-ctype
+*    php-curl
+*    php-fpm
+*    php-iconv
+*    php-json
+*    php-mbstring
+*    php-openssl
+*    php-phar
+*    php-session
+*    php-simplexml
+*    php-xml
+*    php-xmlwriter
+*    php-zip
+*    php-bcmath
+*    php-dom
+*    php-ftp
+*    php-gd
+*    php-intl
+*    php-mysqli
+*    php-mysqlnd
+*    php-opcache
+*    php-pdo_mysql
+*    php-pecl-memcached
+*    php-pecl-redis
+*    php-soap
+*    php-sockets
+*    php-sodium
+*    php-sqlite3
+*    php-xmlreader
+*    php-xsl
+
 
 ### Use components
 Inside the container, you can run any tool you need from any working directory.<br>
