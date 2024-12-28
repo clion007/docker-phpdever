@@ -29,13 +29,15 @@ jobs:
         else
           PHP_VERSION=${{ inputs.PHP_VERSION }}
         fi
+        PHP_NAME=$(echo $PHP_VERSION | awk -F "." '{print $1$2}')
         echo "PhpVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
+        echo "PhpName=$PHP_NAME" >> $GITHUB_OUTPUT
         if [ -z ${{ inputs.COMPOSER_VERSION }} ]; then
           COMPOSER_VERSION=$(wget -qO- -t1 -T2 https://getcomposer.org/ | grep "Latest" | awk -F ">" '{printf $3}' | awk -F "<" '{printf $1}')
         else
           COMPOSER_VERSION=${{ inputs.COMPOSER_VERSION }}
         fi
-        echo "composerVersion=$COMPOSER_VERSION" >> $GITHUB_OUTPUT
+        echo "ComposerVersion=$COMPOSER_VERSION" >> $GITHUB_OUTPUT
      
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -58,19 +60,20 @@ jobs:
         context: .
         push: true
         build-args: |
-          COMPOSER_VERSION=${{ steps.getVersion.outputs.composerVersion }}
+          COMPOSER_VERSION=${{ steps.getVersion.outputs.ComposerVersion }}
           PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
+          PHP_NAME=${{ steps.getVersion.outputs.PhpName }}
         tags: |
           clion007/Phpdever:latest
-          clion007/Phpdever:v${{ steps.getVersion.outputs.PhpVersion }}
+          clion007/Phpdever:${{ steps.getVersion.outputs.PhpVersion }}
           registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest
           registry.cn-chengdu.aliyuncs.com/clion/Phpdever:${{ steps.getVersion.outputs.PhpVersion }}
 
-    - name: Get Release Body
+    - name: Build Release Body
       id: getBody
       if: steps.build.outcome == 'success'
       run: |
-        BODYINFO="Changes for detail can view in offical link https://www.php.net/ChangeLog-$(echo ${{ steps.getVersion.outputs.PhpVersion }} | awk -F "." '{printf $1}').php and https://getcomposer.org/changelog/${{ steps.getVersion.outputs.composerVersion }}"
+        BODYINFO="Changes for detail can view in offical link https://www.php.net/ChangeLog-$(echo ${{ steps.getVersion.outputs.PhpVersion }} | awk -F "." '{printf $1"."$2}').php and https://getcomposer.org/changelog/${{ steps.getVersion.outputs.ComposerVersion }}"
         echo "BodyInfo=$BODYINFO" >> $GITHUB_OUTPUT
       
     - name: Publish Release

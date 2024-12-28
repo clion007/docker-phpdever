@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1
 
 # Docker build arguments
-# ARG DOTNET_VERSION
-ARG DOTNET_VERSION=8.0
+ARG PHP_NAME
+ARG PHP_VERSION
+ARG COMPOSER_VERSION
 
-# build jellyfin server
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-alpine AS server
+# Build PHP
+FROM alpine AS builder
 
 ARG JELLYFIN_VERSION
 ARG DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -59,148 +60,6 @@ RUN set -ex; \
     npm run build:production; \
     apk del --no-network .build-deps; \
     mv dist /web; \
-    rm -rf \
-        /var/cache/apk/* \
-        /var/tmp/* \
-        ../* \
-    ;
-
-# build jellyfin-ffmpeg
-FROM alpine AS ffmpeg
-
-ARG FFMPEG_VERSION
-ARG FFMPEG_PREFIX=/ffmpeg
-
-WORKDIR /tmp/jellyfin-ffmpeg
-
-ADD https://github.com/jellyfin/jellyfin-ffmpeg/archive/refs/tags/v$FFMPEG_VERSION.tar.gz ../jellyfin-ffmpeg.tar.gz
-
-COPY --chmod=755 deplib/ ../
-COPY --chmod=755 patches/ ../
-
-RUN set -ex; \
-    apk add --no-cache --upgrade \
-        alpine-sdk \
-        alsa-lib-dev \
-        aom-dev \
-        bzip2-dev \
-        coreutils \
-        cunit-dev \
-        dav1d-dev \
-        fdk-aac-dev \
-        ffmpeg-libs \
-        ffmpeg-dev \
-        fontconfig-dev \
-        freetype-dev \
-        fribidi-dev \
-        gmp-dev \
-        imlib2-dev \
-        intel-media-driver-dev \
-        intel-media-sdk-dev \
-	ladspa-dev \
-        lame-dev \
-        libass-dev \
-        libbluray-dev \
-        libdrm-dev \
-        libogg-dev \
-        libopenmpt-dev \
-        libplacebo-dev \
-        libpng-dev \
-	librist-dev \
-	libsrt-dev \
-        libtheora-dev \
-        libtool \
-        libva-dev \
-        libva-intel-driver \
-        libvorbis-dev \
-        libvpx-dev \
-        libwebp-dev \
-	libxml2-dev \
-        lilv-dev \
-        mesa-dev \
-        musl-dev \
-        nasm \
-        opencl-dev \
-        openssl-dev \
-        opus-dev \
-        perl-dev \
-	rav1e-dev \
-        shaderc-dev \
-        svt-av1-dev \
-        util-linux-dev \
-	v4l-utils-dev \
-        # vulkan-loader-dev \
-        x264-dev \
-        x265-dev \
-        xz-dev \
-        zimg-dev \
-        zlib-dev \
-    ; \
-    tar xf ../jellyfin-ffmpeg.tar.gz --strip-components=1; \
-    mv -f ../*.patch debian/patches/; \
-    cat debian/patches/*.patch | patch -p1; \
-    ./configure \
-      --prefix=$FFMPEG_PREFIX \
-      --target-os=linux \
-      --extra-version=Jellyfin \
-      --disable-asm \
-      --disable-debug \
-      --disable-doc \
-      --disable-ffplay \
-      --disable-librtmp \
-      --disable-libxcb \
-      --disable-sdl2 \
-      --disable-shared \
-      --disable-xlib \
-      --enable-avfilter \
-      --enable-fontconfig \
-      --enable-gmp \
-      --enable-gpl \
-      --enable-ladspa \
-      --enable-libaom \
-      --enable-libass \
-      --enable-libbluray \
-      --enable-libdav1d \
-      --enable-libdrm \
-      --enable-libfdk-aac \
-      --enable-libfontconfig \
-      --enable-libfreetype \
-      --enable-libfribidi \
-      --enable-libmfx \
-      --enable-libmp3lame \
-      --enable-libopenmpt \
-      --enable-libopus \
-      --enable-libplacebo \
-      --enable-librav1e \
-      --enable-librist \
-      --enable-libshaderc \
-      --enable-libsrt \
-      --enable-libsvtav1 \
-      --enable-libtheora \
-      --enable-libv4l2 \
-      --enable-libvorbis \
-      --enable-libvpx \
-      --enable-libwebp \
-      --enable-libx264 \
-      --enable-libx265 \
-      --enable-libxml2 \
-      --enable-libzimg \
-      --enable-lv2 \
-      --enable-nonfree \
-      --enable-opencl \
-      --enable-openssl \
-      --enable-pic \
-      --enable-pthreads \
-      --enable-static \
-      --enable-vaapi \
-      --enable-version3 \
-      # --enable-vulkan \
-    ; \
-    make -j $(nproc) install $FFMPEG_PREFIX; \
-    \
-    # build ffmpeg lib files
-    ../cplibfiles.sh $FFMPEG_PREFIX/bin/ffmpeg $FFMPEG_PREFIX/library; \
-    ../cplibfiles.sh $FFMPEG_PREFIX/bin/ffprobe $FFMPEG_PREFIX/library; \
     rm -rf \
         /var/cache/apk/* \
         /var/tmp/* \
