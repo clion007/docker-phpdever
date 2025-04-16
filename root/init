@@ -1,36 +1,63 @@
 #!/bin/sh
-set -e
 
-# make folders if them doesn't exist
-mkdir -p /config/php/php83 \
-  /config/log/php/php83
+# 默认值
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+UMASK=${UMASK:-022}
+TZ=${TZ:-Asia/Shanghai}
 
-# create local php.ini if it doesn't exist, set local timezone
-if [[ ! -f /config/php/php83/php-local.ini ]]; then
-    printf "; Edit this file to override php.ini directives\\n\\ndate.timezone = %s\\n" "$TZ" > /config/php/php83/php-local.ini
+# 设置时区
+ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
+echo "${TZ}" > /etc/timezone
+
+# 设置umask
+umask ${UMASK}
+
+# 检查用户和组ID是否需要修改
+if [ ! "$(id -u phpdever)" -eq "${PUID}" ]; then
+    usermod -o -u "${PUID}" phpdever
 fi
 
-# symlink user php-local.ini to image
-rm -rf /etc/php83/conf.d/php-local.ini
-ln -s /config/php/php83/php-local.ini /etc/php83/conf.d/php-local.ini
-
-# create override for www.conf if it doesn't exist
-if [[ ! -f /config/php/php83/www2.conf ]]; then
-    printf "; Edit this file to override www.conf and php-fpm.conf directives and restart the container\\n\\n; Pool name\\n[www]\\n\\n" >/config/php/php83/www2.conf
+if [ ! "$(id -g phpdever)" -eq "${PGID}" ]; then
+    groupmod -o -g "${PGID}" phpdever
 fi
 
-# copy user www2.conf to image
-rm -rf /etc/php83/php-fpm.d/www2.conf
-ln -s /config/php/php83/www2.conf /etc/php83/php-fpm.d/www2.conf
+# 确保目录权限正确
+chown -R phpdever:phpdever /config
 
-# permissions
-chmod -R 777 \
-    /config/php \
-    /config/log
+# 输出当前用户信息
+echo "
+-------------------------------------
+用户 uid:    $(id -u phpdever)
+用户 gid:    $(id -g phpdever)
+-------------------------------------
+"
 
-# first arg is `-f` or `--some-option` or `something.conf`
-if [ "${1#-}" != "$1" ] || [ "${1%.conf}" != "$1" ]; then
-	set -- php-fpm83 "$@"
+# 创建PHP配置目录
+mkdir -p /config/php
+mkdir -p /config/php-fpm.d
+
+# 如果配置文件不存在，则创建默认配置
+if [ ! -f "/config/php/php.ini" ]; then
+    cp /etc/php${PHP_VERSION}/php.ini /config/php/php.ini
+    chown phpdever:phpdever /config/php/php.ini
 fi
 
-exec "$@"
+if [ ! -f "/config/php-fpm.d/www.conf" ]; then
+    cp /etc/php${PHP_VERSION}/php-fpm.d/www.conf /config/php-fpm.d/www.conf
+    chown phpdever:phpdever /config/php-fpm.d/www.conf
+fi
+
+# 链接配置文件
+ln -sf /config/php/php.ini /etc/php${PHP_VERSION}/php.ini
+ln -sf /config/php-fpm.d/www.conf /etc/php${PHP_VERSION}/php-fpm.d/www.conf
+
+# 添加分析脚本到PATH
+export PATH="/root/.composer/vendor/bin:${PATH}"
+
+# 以适当的用户身份执行命令
+if [ "$1" = "php-fpm${PHP_VERSION}" ]; then
+    exec su-exec phpdever "$@"
+else
+    exec "$@"
+fi

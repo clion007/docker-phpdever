@@ -1,135 +1,199 @@
 # syntax=docker/dockerfile:1
 
-# Docker build arguments
-ARG PHP_NAME
+# Docker build arguments - 无默认值，完全依赖工作流传值
 ARG PHP_VERSION
 ARG COMPOSER_VERSION
 
-# Build PHP
-FROM alpine AS builder
+# 构建基础PHP环境
+FROM alpine:latest AS builder
 
-ARG JELLYFIN_VERSION
-ARG DOTNET_CLI_TELEMETRY_OPTOUT=1
+ARG PHP_VERSION
+ARG COMPOSER_VERSION
 
-WORKDIR /tmp/jellyfin
-
-ADD https://github.com/jellyfin/jellyfin/archive/refs/tags/v$JELLYFIN_VERSION.tar.gz ../jellyfin.tar.gz
-
-RUN set -ex; \
-    tar xf ../jellyfin.tar.gz --strip-components=1; \
-    dotnet publish \
-        Jellyfin.Server \
-        --self-contained \
-        --configuration Release \
-        --runtime linux-musl-x64 \
-        --output=/server \
-        "-p:DebugSymbols=false" \
-        "-p:DebugType=none" \
-    ; \
-    rm -rf \
-        /var/cache/apk/* \
-        /var/tmp/* \
-        ../* \
-    ;
-
-# build jellyfin-web client
-FROM node:lts-alpine AS web
-
-ARG JELLYFIN_VERSION
-
-ENV JELLYFIN_VERSION=${JELLYFIN_VERSION}
-
-WORKDIR /tmp/jellyfin-web
-
-ADD https://github.com/jellyfin/jellyfin-web/archive/refs/tags/v$JELLYFIN_VERSION.tar.gz ../jellyfin-web.tar.gz
-
+# 安装构建依赖
 RUN set -ex; \
     apk add --no-cache --virtual .build-deps \
-      alpine-sdk \
-      autoconf \
-      libpng-dev \
-      gifsicle \
-      automake \
-      libtool \
-      musl-dev \
-      nasm \
-      python3 \
+        alpine-sdk \
+        autoconf \
+        curl \
+        curl-dev \
+        libxml2-dev \
+        openssl-dev \
+        openssl \
+        libpng-dev \
+        jpeg-dev \
+        freetype-dev \
+        oniguruma-dev \
+        libzip-dev \
+        icu-dev \
+        sqlite-dev \
+        libsodium-dev \
+        linux-headers \
+        bison \
+        re2c \
+        git \
+        unzip \
+        tar \
+        ca-certificates \
+        bzip2-dev \
+        libtool \
+        readline-dev \
+        postgresql-dev \
     ; \
-    tar xf ../jellyfin-web.tar.gz --strip-components=1; \
-    npm ci --no-audit --unsafe-perm; \
-    npm run build:production; \
+    # 下载并编译PHP
+    mkdir -p /usr/src; \
+    cd /usr/src; \
+    curl -fsSL "https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz" -o php.tar.gz; \
+    tar -xzf php.tar.gz; \
+    cd php-${PHP_VERSION}; \
+    # 配置PHP
+    ./configure \
+        --prefix=/usr/local/php \
+        --with-config-file-path=/usr/local/php/etc \
+        --with-config-file-scan-dir=/usr/local/php/etc/conf.d \
+        --enable-fpm \
+        --with-fpm-user=phpdever \
+        --with-fpm-group=phpdever \
+        --enable-opcache \
+        --enable-mbstring \
+        --enable-mysqlnd \
+        --with-mysqli=mysqlnd \
+        --with-pdo-mysql=mysqlnd \
+        --with-pdo-sqlite \
+        --with-sqlite3 \
+        --with-curl \
+        --with-openssl \
+        --with-zip \
+        --with-zlib \
+        --enable-gd \
+        --with-jpeg \
+        --with-freetype \
+        --enable-intl \
+        --with-sodium \
+        --enable-bcmath \
+        --enable-exif \
+        --enable-sockets \
+        --with-bz2 \
+        --enable-calendar \
+        --enable-soap \
+        --with-readline \
+        --with-pgsql \
+        --with-pdo-pgsql \
+    ; \
+    # 编译和安装PHP
+    make -j$(nproc); \
+    make install; \
+    # 创建配置目录
+    mkdir -p /usr/local/php/etc/conf.d; \
+    # 复制配置文件
+    cp php.ini-development /usr/local/php/etc/php.ini; \
+    cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf; \
+    cp /usr/local/php/etc/php-fpm.d/www.conf.default /usr/local/php/etc/php-fpm.d/www.conf; \
+    # 安装PECL扩展
+    cd /usr/src; \
+    /usr/local/php/bin/pecl install xdebug; \
+    # 安装Composer
+    curl -sS https://getcomposer.org/installer | /usr/local/php/bin/php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_VERSION}; \
+    # 安装全局工具
+    /usr/local/bin/composer global require \
+        phpunit/phpunit \
+        rector/rector \
+        phpstan/phpstan \
+        vimeo/psalm \
+        squizlabs/php_codesniffer \
+        friendsofphp/php-cs-fixer \
+        phpmd/phpmd \
+        sebastian/phpcpd \
+        phpcompatibility/php-compatibility \
+        phan/phan \
+        infection/infection \
+        nunomaduro/phpinsights \
+        symfony/var-dumper \
+        brianium/paratest \
+        phpmetrics/phpmetrics \
+        pdepend/pdepend \
+        phploc/phploc \
+        exakat/exakat \
+    ; \
+    # 配置PHPCompatibility
+    mkdir -p /root/.composer/vendor/squizlabs/php_codesniffer/src/Standards/; \
+    ln -s /root/.composer/vendor/phpcompatibility/php-compatibility /root/.composer/vendor/squizlabs/php_codesniffer/src/Standards/PHPCompatibility; \
+    # 清理
+    cd /; \
+    rm -rf /usr/src/*; \
     apk del --no-network .build-deps; \
-    mv dist /web; \
     rm -rf \
         /var/cache/apk/* \
         /var/tmp/* \
-        ../* \
+        /tmp/* \
     ;
 
-# Build the final combined image
-FROM clion007/alpine
+# 构建最终镜像
+FROM alpine:latest
 
-LABEL mantainer="Clion Nihe Email: clion007@126.com"
+LABEL maintainer="Clion Nihe Email: clion007@126.com"
+LABEL description="PHP代码分析工具集，用于项目版本升级和兼容性分析"
 
-ARG BRANCH="edge"
-ARG JELLYFIN_PATH=/usr/lib/jellyfin/
-ARG JELLYFIN_WEB_PATH=/usr/share/jellyfin-web/
+ARG PHP_VERSION
+ARG COMPOSER_VERSION
 
-# Default environment variables for the Jellyfin invocation
-ENV JELLYFIN_LOG_DIR=/config/log \
-    JELLYFIN_DATA_DIR=/config/data \
-    JELLYFIN_CACHE_DIR=/config/cache \
-    JELLYFIN_CONFIG_DIR=/config/config \
-    JELLYFIN_WEB_DIR=/usr/share/jellyfin-web
-ENV XDG_CACHE_HOME=${JELLYFIN_CACHE_DIR}
+# 设置环境变量
+ENV PATH="/usr/local/php/bin:/usr/local/php/sbin:/root/.composer/vendor/bin:${PATH}"
+ENV PHP_VERSION=${PHP_VERSION}
+ENV COMPOSER_VERSION=${COMPOSER_VERSION}
+ENV XDEBUG_MODE=off
 
-# https://github.com/dlemstra/Magick.NET/issues/707#issuecomment-785351620
-ENV MALLOC_TRIM_THRESHOLD_=131072
+# 安装运行时依赖
+RUN set -ex; \
+    apk add --no-cache \
+        libxml2 \
+        openssl \
+        libpng \
+        jpeg \
+        freetype \
+        oniguruma \
+        libzip \
+        icu-libs \
+        sqlite-libs \
+        libsodium \
+        bzip2-libs \
+        readline \
+        postgresql-libs \
+        git \
+        bash \
+        shadow \
+        su-exec \
+        jq \
+        grep \
+        diffutils \
+    ; \
+    # 创建用户和组
+    groupadd -g 1000 phpdever; \
+    useradd -u 1000 -s /bin/bash -g 1000 phpdever; \
+    # 创建配置目录
+    mkdir -p /config; \
+    chown phpdever:phpdever /config; \
+    # 清理
+    rm -rf \
+        /var/cache/apk/* \
+        /var/tmp/* \
+        /tmp/* \
+    ;
 
-# add jellyfin files
-COPY --from=server /server $JELLYFIN_PATH
-COPY --from=web /web $JELLYFIN_WEB_PATH
-COPY --from=ffmpeg /ffmpeg/bin /usr/bin/
-COPY --from=ffmpeg /ffmpeg/library /
+# 从构建阶段复制PHP和工具
+COPY --from=builder /usr/local/php /usr/local/php
+COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+COPY --from=builder /root/.composer/vendor /root/.composer/vendor
 
-# add local files
+# 添加分析脚本
 COPY --chmod=755 root/ /
 
-# install packages
-RUN set -ex; \
-  apk add --no-cache \
-    --repository=http://dl-cdn.alpinelinux.org/alpine/$BRANCH/main \
-    --repository=http://dl-cdn.alpinelinux.org/alpine/$BRANCH/community \
-    su-exec \
-    icu-libs \
-    libva-intel-driver \
-    intel-media-driver \
-    font-droid-nonlatin \
-  ; \
-  find /usr/share/fonts/droid-nonlatin/ -type f -not -name 'DroidSansFallbackFull.ttf' -delete; \
-  apk add --no-cache --virtual .user-deps \
-    shadow \
-  ; \
-  \
-  # set jellyfin process user and group
-  groupadd -g 101 jellyfin; \
-  useradd -u 100 -s /bin/nologin -M -g 101 jellyfin; \
-  ln -s /usr/lib/jellyfin/jellyfin /usr/bin/jellyfin; \
-  chown jellyfin:jellyfin /usr/bin/jellyfin; \
-  \
-  # make dir for config and data
-  mkdir -p /config; \
-  chown jellyfin:jellyfin /config; \
-  \
-  apk del --no-network .user-deps; \
-  rm -rf \
-      /var/cache/apk/* \
-      /var/tmp/* \
-      /tmp/* \
-  ;
-  
-# ports
-EXPOSE 8096 8920 7359/udp 1900/udp
+# 工作目录
+WORKDIR /app
 
-# entrypoint set in clion007/alpine base image
-CMD ["--ffmpeg=/usr/bin/ffmpeg"]
+# 暴露PHP-FPM端口
+EXPOSE 9000
+
+# 入口点
+ENTRYPOINT ["/init"]
+CMD ["php-fpm", "-F"]
