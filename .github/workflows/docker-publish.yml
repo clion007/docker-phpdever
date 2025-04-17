@@ -6,11 +6,17 @@ on:
       PHP_VERSION:
         required: false
         type: string
-        description: 'The php stable version ("X.Y.Z")'
+        description: 'PHP版本 (例如: 7.4.33, 8.0.30, 8.1.31, 留空则使用最新版本)'
       COMPOSER_VERSION:
         required: false
         type: string
-        description: 'The composer stable version ("X.Y.Z")'
+        description: 'Composer版本 (例如: 2.5.8, 留空则使用最新版本)'
+  push:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker-publish.yml'
+      - 'root/**'
 
 jobs:
   Phpdever_Publish:
@@ -24,7 +30,7 @@ jobs:
     - name: Get latest versions
       id: getVersion
       run: |
-        if [ -z ${{ inputs.PHP_VERSION }} ]; then
+        if [ -z "${{ inputs.PHP_VERSION }}" ]; then
           PHP_VERSION=$(wget -qO- -t1 -T2 https://www.php.net/downloads.php | grep "Changelog" | awk 'NR==1 {print}' | awk '{printf $2}')
         else
           PHP_VERSION=${{ inputs.PHP_VERSION }}
@@ -32,12 +38,14 @@ jobs:
         PHP_NAME=$(echo $PHP_VERSION | awk -F "." '{print $1$2}')
         echo "PhpVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
         echo "PhpName=$PHP_NAME" >> $GITHUB_OUTPUT
-        if [ -z ${{ inputs.COMPOSER_VERSION }} ]; then
+        if [ -z "${{ inputs.COMPOSER_VERSION }}" ]; then
           COMPOSER_VERSION=$(wget -qO- -t1 -T2 https://getcomposer.org/ | grep "Latest" | awk -F ">" '{printf $3}' | awk -F "<" '{printf $1}')
         else
           COMPOSER_VERSION=${{ inputs.COMPOSER_VERSION }}
         fi
         echo "ComposerVersion=$COMPOSER_VERSION" >> $GITHUB_OUTPUT
+        echo "使用PHP版本: $PHP_VERSION"
+        echo "使用Composer版本: $COMPOSER_VERSION"
      
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -52,6 +60,9 @@ jobs:
         username: ${{ secrets.ALIYUN_USER }}
         password: ${{ secrets.ALIYUN_TOKEN }}
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Build and Push Docker images
       id: build
       uses: docker/build-push-action@v6
@@ -62,12 +73,11 @@ jobs:
         build-args: |
           COMPOSER_VERSION=${{ steps.getVersion.outputs.ComposerVersion }}
           PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
-          PHP_NAME=${{ steps.getVersion.outputs.PhpName }}
         tags: |
-          clion007/Phpdever:latest
-          clion007/Phpdever:${{ steps.getVersion.outputs.PhpVersion }}
-          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest
-          registry.cn-chengdu.aliyuncs.com/clion/Phpdever:${{ steps.getVersion.outputs.PhpVersion }}
+          clion007/phpdever:latest
+          clion007/phpdever:php${{ steps.getVersion.outputs.PhpVersion }}
+          registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest
+          registry.cn-chengdu.aliyuncs.com/clion/phpdever:php${{ steps.getVersion.outputs.PhpVersion }}
 
     - name: Build Release Body
       id: getBody

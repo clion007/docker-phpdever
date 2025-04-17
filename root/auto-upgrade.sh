@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # 自动升级PHP代码的脚本
 # 用法: auto-upgrade.sh <目标PHP版本> <代码目录>
@@ -16,7 +16,8 @@ echo "===== 开始自动升级代码到PHP $TARGET_VERSION ====="
 
 # 使用Rector自动升级代码
 echo ">> 运行Rector自动升级..."
-rector process $CODE_DIR --set php${TARGET_VERSION/./}
+VERSION_NO_DOT=$(echo "$TARGET_VERSION" | tr -d '.')
+rector process "$CODE_DIR" --set "php${VERSION_NO_DOT}"
 
 # 使用PHP-CS-Fixer修复代码风格
 echo ">> 修复代码风格..."

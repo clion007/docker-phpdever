@@ -56,7 +56,7 @@ ln -sf /config/php-fpm.d/www.conf /etc/php${PHP_VERSION}/php-fpm.d/www.conf
 export PATH="/root/.composer/vendor/bin:${PATH}"
 
 # 以适当的用户身份执行命令
-if [ "$1" = "php-fpm${PHP_VERSION}" ]; then
+if [ "$1" = "php-fpm"* ]; then
     exec su-exec phpdever "$@"
 else
     exec "$@"

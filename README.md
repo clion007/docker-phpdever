@@ -1,44 +1,68 @@
 # Phpdever Docker Image
-[![Build](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml)
+
+[![Docker Publish](https://github.com/clion007/docker-phpdever/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/clion007/docker-phpdever/actions/workflows/docker-publish.yml)
 [![License](https://img.shields.io/github/license/clion007/docker-phpdever)](https://github.com/clion007/docker-phpdever/blob/main/LICENSE)
 ![GitHub top language](https://img.shields.io/github/languages/top/clion007/docker-phpdever)
-[![Packages retention policy](https://github.com/clion007/docker-phpdever/actions/workflows/packages-retention-policy.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/packages-retention-policy.yaml)
 
-This repository is a docker image based on official php, composer and alpine docker images to help you to build and test your PHP projects with different PHP version.<br>
-This docker image contains a necessary tools you need to analyze and test your PHP project
-* xdebug
-* phpunit
-* rector
-* phpstan
-* psalm
-* phpcs
-* php-cs-fixer
-* phpmd
-* phpcpd (available from php 7.3 version)
+A lightweight PHP development environment and code analysis toolset based on Alpine Linux, designed for PHP project version upgrades and compatibility analysis.
 
-Below is the list of docker images available by PHP versions:
+## Key Features
 
-| PHP version | Docker image tags                                                                        |
-|-------------|------------------------------------------------------------------------------------------|
-| PHP 8.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.4.2` |
-| PHP 8.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.3.15`                                          |
-| PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:v8.2.27`                                          |
-| PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php8.1.31`                                          |
-| PHP 8.0     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php8.0.30`                                          |
-| PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php.4.33`                                          |
-| PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php.3.33`                                          |
-| PHP 7.2     | `registry.cn-chengdu.aliyuncs.com/clion/Phpdever:php.2.34`                                          |
+- Lightweight image based on Alpine Linux
+- Support for multiple PHP versions (7.2 - 8.4)
+- Integrated PHP code analysis tools
+- PHP-FPM support
+- Configurable user permissions and timezone
+
+## Built-in Tools
+
+### Debugging & Testing
+- xdebug: PHP debugging and code coverage analysis
+- phpunit: Unit testing framework
+- paratest: PHPUnit parallel testing tool
+
+### Code Analysis
+- rector: Automated code upgrade tool
+- phpstan: PHP static analysis tool
+- psalm: PHP static type checker
+- phan: PHP static analyzer
+- exakat: PHP static analysis tool
+
+### Code Quality
+- phpcs: PHP code style checker
+- php-cs-fixer: Code formatting tool
+- phpmd: Code quality detector
+- phpcpd: Copy/Paste detector (PHP 7.3+)
+- phpmetrics: Code quality metrics
+- pdepend: PHP dependency analysis
+
+### Additional Tools
+- composer: PHP package manager
+- infection: PHP mutation testing
+- phpinsights: PHP quality checks
+- var-dumper: Variable debugging tool
+
+## Available Versions
+
+| PHP Version | Docker Image Tags |
+|-------------|------------------|
+| PHP 8.4 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.4.2` |
+| PHP 8.3 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.3.15` |
+| PHP 8.2 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.2.27` |
+| PHP 8.1 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.1.31` |
+| PHP 8.0 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.0.30` |
+| PHP 7.4 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php7.4.33` |
+| PHP 7.3 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php7.3.33` |
+| PHP 7.2 | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php7.2.34` |
 
 ## Usage
 
-To help you get started creating a container from this image you can either use docker-compose or the docker cli.
+### Using docker-compose (Recommended)
 
-### docker-compose (recommended, [click here for more info](https://https://docs.docker.com/compose/))
-
-```
+```yaml
 services:
-  jellyfin:
-    container_name: Phpdever
+  phpdever:
+    container_name: phpdever
     image: registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest
     environment:
       - UMASK=022
@@ -53,10 +77,11 @@ services:
     restart: unless-stopped
 ```
 
-### Docker cli
-```
+### Using Docker CLI
+
+```bash
 docker run -d \
-  --name=Phpdever \
+  --name=phpdever \
   -e UMASK=022 \
   -e PUID=1000 \
   -e PGID=1000 \
@@ -67,107 +92,88 @@ docker run -d \
   --restart unless-stopped \
   registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest
 ```
-## Parameters
 
-Containers are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate <external>:<internal> respectively. For example, -p 9090:9000 would expose port 9000 from inside the container to be accessible from the host's IP on port 9090 outside the container.
+## Environment Variables
 
-* -v /config	Contains your www content and all relevant configuration files.
-* -e PUID=1000	for UserID - see below for explanation
-* -e PGID=1000	for GroupID - see below for explanation
-* -e TZ="Asia/Shanghai" specify a timezone to use.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PUID | 1000 | Process User ID |
+| PGID | 1000 | Process Group ID |
+| UMASK | 022 | File permission mask |
+| TZ | Asia/Shanghai | Timezone setting |
 
-## PHP Modules installed
-*    php-common
-*    php-ctype
-*    php-curl
-*    php-fpm
-*    php-iconv
-*    php-json
-*    php-mbstring
-*    php-openssl
-*    php-phar
-*    php-session
-*    php-simplexml
-*    php-xml
-*    php-xmlwriter
-*    php-zip
-*    php-bcmath
-*    php-dom
-*    php-ftp
-*    php-gd
-*    php-intl
-*    php-mysqli
-*    php-mysqlnd
-*    php-opcache
-*    php-pdo_mysql
-*    php-pecl-memcached
-*    php-pecl-redis
-*    php-soap
-*    php-sockets
-*    php-sodium
-*    php-sqlite3
-*    php-xmlreader
-*    php-xsl
+## PHP Extensions
 
-### Use components
-Inside the container, you can run any tool you need from any working directory.<br>
-Global vendor binaries are added to the PATH environment.
+### Core Extensions
+- bcmath
+- calendar
+- ctype
+- curl
+- dom
+- exif
+- ftp
+- gd
+- iconv
+- intl
+- mbstring
+- opcache
+- openssl
+- phar
+- soap
+- sockets
+- xml
+- zip
 
-#### Composer
-```shell
-composer --help
-```
-#### PHP Unit
-```shell
-simple-phpunit --help
-```
-#### Rector
-```shell
-rector --help
-```
-#### PHPStan
-```shell
-phpstan --help
-```
-#### Psalm
-```shell
-psalm --help
-```
-#### PHP Code sniffer
-```shell
-phpcs --help
-```
-#### PHP Coding Standards Fixer
-```shell
-php-cs-fixer --help
-```
-#### PHP Mess Detector
-```shell
-phpmd --help
-```
-#### PHP Copy Past Detector
-```shell
-phpcpd --help
+### Database Support
+- mysqli
+- mysqlnd
+- pdo_mysql
+- pdo_sqlite
+- pgsql
+- pdo_pgsql
+- sqlite3
+
+### PECL Extensions
+- xdebug
+- redis
+- memcached
+
+## Analysis Examples
+
+### Version Compatibility Check
+```bash
+analyze-php-version.sh 7.4 /path/to/code
 ```
 
-## Umask for running applications
+### Automatic Code Upgrade
+```bash
+auto-upgrade.sh 8.1 /path/to/code
+```
 
-For all of my images I provide the ability to override the default umask settings for services started within the containers using the optional -e UMASK=022 setting. Keep in mind umask is not chmod it subtracts from permissions based on it's value it does not add.
+### Using Individual Tools
 
-## User / Group Identifiers
+Check PHP version compatibility:
+```bash
+phpcs --standard=PHPCompatibility --runtime-set testVersion 7.4 your_file.php
+```
 
-When using volumes (-v flags), permissions issues can arise between the host OS and the container, we avoid this issue by allowing you to specify the user PUID and group PGID.
+Upgrade code with Rector:
+```bash
+rector process your_file.php --set php74
+```
 
-Ensure any volume directories on the host are owned by the same user you specify and any permissions issues will vanish like magic.
+Run static analysis:
+```bash
+phpstan analyse your_file.php --level=5
+```
 
 ## References
-* [PHP Unit supported versions](https://phpunit.de/supported-versions.html)
-* [Xdebug compatibility](https://xdebug.org/docs/compat)
-* [PHP Unit](https://symfony.com/doc/current/components/phpunit_bridge.html)
-* [Rector](https://packagist.org/packages/rector/rector)
+
+* [PHPUnit Supported Versions](https://phpunit.de/supported-versions.html)
+* [Xdebug Compatibility](https://xdebug.org/docs/compat)
 * [PHPStan](https://phpstan.org/)
 * [Psalm](https://psalm.dev/docs/)
-* [PHP CS](https://github.com/squizlabs/PHP_CodeSniffer/wiki)
-* [PHP Coding Standards Fixer](https://cs.symfony.com/)
-* [PHP Mess Detector](https://phpmd.org/)
-* [PHP Copy Past detector](https://github.com/sebastianbergmann/phpcpd)
+* [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer/wiki)
+* [PHP-CS-Fixer](https://cs.symfony.com/)
+* [PHPMD](https://phpmd.org/)
+* [PHPCPD](https://github.com/sebastianbergmann/phpcpd)

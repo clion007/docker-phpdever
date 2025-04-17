@@ -3,12 +3,20 @@
 # Docker build arguments - 无默认值，完全依赖工作流传值
 ARG PHP_VERSION
 ARG COMPOSER_VERSION
+ARG PHP_INSTALL_DIR=/usr/local/php
+ARG PHP_LIB_DIR=/usr/local/php/lib
+ARG PHP_TMP_LIB_DIR=/phpdever/lib
+ARG COMPOSER_INSTALL_DIR=/usr/local/bin
 
 # 构建基础PHP环境
 FROM alpine:latest AS builder
 
 ARG PHP_VERSION
 ARG COMPOSER_VERSION
+ARG PHP_INSTALL_DIR
+ARG PHP_LIB_DIR
+ARG PHP_TMP_LIB_DIR
+ARG COMPOSER_INSTALL_DIR
 
 # 安装构建依赖
 RUN set -ex; \
@@ -39,6 +47,8 @@ RUN set -ex; \
         libtool \
         readline-dev \
         postgresql-dev \
+        libmemcached-dev \
+        xsl-dev \
     ; \
     # 下载并编译PHP
     mkdir -p /usr/src; \
@@ -48,35 +58,44 @@ RUN set -ex; \
     cd php-${PHP_VERSION}; \
     # 配置PHP
     ./configure \
-        --prefix=/usr/local/php \
-        --with-config-file-path=/usr/local/php/etc \
-        --with-config-file-scan-dir=/usr/local/php/etc/conf.d \
+        --prefix=${PHP_INSTALL_DIR} \
+        --with-config-file-path=${PHP_INSTALL_DIR}/etc \
+        --with-config-file-scan-dir=${PHP_INSTALL_DIR}/etc/conf.d \
         --enable-fpm \
         --with-fpm-user=phpdever \
         --with-fpm-group=phpdever \
-        --enable-opcache \
+        --enable-bcmath \
+        --enable-calendar \
+        --enable-ctype \
+        --enable-dom \
+        --enable-exif \
+        --enable-ftp \
+        --enable-gd \
+        --enable-intl \
         --enable-mbstring \
         --enable-mysqlnd \
+        --enable-opcache \
+        --enable-soap \
+        --enable-sockets \
+        --enable-xml \
+        --enable-xmlreader \
+        --enable-xmlwriter \
+        --with-bz2 \
+        --with-curl \
+        --with-freetype \
+        --with-iconv \
+        --with-jpeg \
         --with-mysqli=mysqlnd \
+        --with-openssl \
         --with-pdo-mysql=mysqlnd \
         --with-pdo-sqlite \
+        --with-phar \
+        --with-readline \
+        --with-sodium \
         --with-sqlite3 \
-        --with-curl \
-        --with-openssl \
+        --with-xsl \
         --with-zip \
         --with-zlib \
-        --enable-gd \
-        --with-jpeg \
-        --with-freetype \
-        --enable-intl \
-        --with-sodium \
-        --enable-bcmath \
-        --enable-exif \
-        --enable-sockets \
-        --with-bz2 \
-        --enable-calendar \
-        --enable-soap \
-        --with-readline \
         --with-pgsql \
         --with-pdo-pgsql \
     ; \
@@ -84,18 +103,24 @@ RUN set -ex; \
     make -j$(nproc); \
     make install; \
     # 创建配置目录
-    mkdir -p /usr/local/php/etc/conf.d; \
+    mkdir -p ${PHP_INSTALL_DIR}/etc/conf.d; \
     # 复制配置文件
-    cp php.ini-development /usr/local/php/etc/php.ini; \
-    cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf; \
-    cp /usr/local/php/etc/php-fpm.d/www.conf.default /usr/local/php/etc/php-fpm.d/www.conf; \
+    cp php.ini-development ${PHP_INSTALL_DIR}/etc/php.ini; \
+    cp ${PHP_INSTALL_DIR}/etc/php-fpm.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    cp ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
     # 安装PECL扩展
     cd /usr/src; \
-    /usr/local/php/bin/pecl install xdebug; \
+    ${PHP_INSTALL_DIR}/bin/pecl install xdebug; \
+    ${PHP_INSTALL_DIR}/bin/pecl install redis; \
+    ${PHP_INSTALL_DIR}/bin/pecl install memcached; \
+    # 启用扩展
+    echo "extension=redis.so" > ${PHP_INSTALL_DIR}/etc/conf.d/redis.ini; \
+    echo "extension=memcached.so" > ${PHP_INSTALL_DIR}/etc/conf.d/memcached.ini; \
+    echo "zend_extension=xdebug.so" > ${PHP_INSTALL_DIR}/etc/conf.d/xdebug.ini; \
     # 安装Composer
-    curl -sS https://getcomposer.org/installer | /usr/local/php/bin/php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_VERSION}; \
+    curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- --install-dir=${COMPOSER_INSTALL_DIR} --filename=composer --version=${COMPOSER_VERSION}; \
     # 安装全局工具
-    /usr/local/bin/composer global require \
+    ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
         rector/rector \
         phpstan/phpstan \
@@ -118,6 +143,19 @@ RUN set -ex; \
     # 配置PHPCompatibility
     mkdir -p /root/.composer/vendor/squizlabs/php_codesniffer/src/Standards/; \
     ln -s /root/.composer/vendor/phpcompatibility/php-compatibility /root/.composer/vendor/squizlabs/php_codesniffer/src/Standards/PHPCompatibility; \
+    # 复制动态库到指定目录
+    mkdir -p ${PHP_TMP_LIB_DIR}; \
+    # 复制PHP相关的动态库
+    for lib in $(find ${PHP_LIB_DIR} -name "*.so" -o -name "*.so.*"); do \
+        cp -L ${lib} ${PHP_TMP_LIB_DIR}/; \
+        # 获取依赖并复制
+        deps=$(ldd ${lib} 2>/dev/null | awk '{print $3}' | grep -v "not found" | grep -v "^$"); \
+        for dep in ${deps}; do \
+            if [ -f "${dep}" ] && [ ! -f "${PHP_TMP_LIB_DIR}/$(basename ${dep})" ]; then \
+                cp -L ${dep} ${PHP_TMP_LIB_DIR}/; \
+            fi \
+        done \
+    done; \
     # 清理
     cd /; \
     rm -rf /usr/src/*; \
@@ -131,17 +169,22 @@ RUN set -ex; \
 # 构建最终镜像
 FROM alpine:latest
 
+ARG PHP_VERSION
+ARG COMPOSER_VERSION
+ARG PHP_INSTALL_DIR
+ARG PHP_LIB_DIR
+ARG PHP_TMP_LIB_DIR
+ARG COMPOSER_INSTALL_DIR
+
 LABEL maintainer="Clion Nihe Email: clion007@126.com"
 LABEL description="PHP代码分析工具集，用于项目版本升级和兼容性分析"
 
-ARG PHP_VERSION
-ARG COMPOSER_VERSION
-
 # 设置环境变量
-ENV PATH="/usr/local/php/bin:/usr/local/php/sbin:/root/.composer/vendor/bin:${PATH}"
+ENV PATH="${PHP_INSTALL_DIR}/bin:${PHP_INSTALL_DIR}/sbin:/root/.composer/vendor/bin:${PATH}"
 ENV PHP_VERSION=${PHP_VERSION}
 ENV COMPOSER_VERSION=${COMPOSER_VERSION}
 ENV XDEBUG_MODE=off
+ENV PHP_LIB_DIR=${PHP_LIB_DIR}
 
 # 安装运行时依赖
 RUN set -ex; \
@@ -159,8 +202,9 @@ RUN set -ex; \
         bzip2-libs \
         readline \
         postgresql-libs \
+        libmemcached-libs \
+        libxslt \
         git \
-        bash \
         shadow \
         su-exec \
         jq \
@@ -169,7 +213,7 @@ RUN set -ex; \
     ; \
     # 创建用户和组
     groupadd -g 1000 phpdever; \
-    useradd -u 1000 -s /bin/bash -g 1000 phpdever; \
+    useradd -u 1000 -s /bin/sh -g 1000 phpdever; \
     # 创建配置目录
     mkdir -p /config; \
     chown phpdever:phpdever /config; \
@@ -181,9 +225,10 @@ RUN set -ex; \
     ;
 
 # 从构建阶段复制PHP和工具
-COPY --from=builder /usr/local/php /usr/local/php
-COPY --from=builder /usr/local/bin/composer /usr/local/bin/composer
+COPY --from=builder ${PHP_INSTALL_DIR} ${PHP_INSTALL_DIR}
+COPY --from=builder ${COMPOSER_INSTALL_DIR}/composer ${COMPOSER_INSTALL_DIR}/composer
 COPY --from=builder /root/.composer/vendor /root/.composer/vendor
+COPY --from=builder ${PHP_TMP_LIB_DIR} /usr/lib/
 
 # 添加分析脚本
 COPY --chmod=755 root/ /

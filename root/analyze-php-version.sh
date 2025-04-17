@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # 分析PHP版本兼容性的脚本
 # 用法: analyze-php-version.sh <目标PHP版本> <代码目录>
@@ -20,10 +20,11 @@ phpcs --standard=PHPCompatibility --runtime-set testVersion $TARGET_VERSION $COD
 
 # 使用Rector分析可能需要升级的代码
 echo ">> 运行Rector分析..."
-rector process $CODE_DIR --dry-run --set php${TARGET_VERSION/./}
+VERSION_NO_DOT=$(echo "$TARGET_VERSION" | tr -d '.')
+rector process "$CODE_DIR" --dry-run --set "php${VERSION_NO_DOT}"
 
 # 使用PHPStan进行静态分析
 echo ">> 运行PHPStan静态分析..."
-phpstan analyse $CODE_DIR --level=5
+phpstan analyse $CODE_DIR --level=3 # 降低级别，提高兼容性
 
 echo "===== 分析完成 ====="
