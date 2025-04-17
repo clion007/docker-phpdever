@@ -95,7 +95,6 @@ jobs:
         file: Dockerfile
         context: .
         push: true
-        platforms: linux/amd64,linux/arm64
         build-args: |
           COMPOSER_VERSION=${{ steps.getVersion.outputs.ComposerVersion }}
           PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
