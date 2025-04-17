@@ -167,7 +167,7 @@ RUN set -ex; \
     ;
 
 # 构建最终镜像
-FROM alpine:latest
+FROM clion007/alpine:latest
 
 ARG PHP_VERSION
 ARG COMPOSER_VERSION
@@ -186,7 +186,13 @@ ENV COMPOSER_VERSION=${COMPOSER_VERSION}
 ENV XDEBUG_MODE=off
 ENV PHP_LIB_DIR=${PHP_LIB_DIR}
 
-# 安装运行时依赖
+# 从构建阶段复制PHP和工具
+COPY --from=builder ${PHP_INSTALL_DIR} ${PHP_INSTALL_DIR}
+COPY --from=builder ${COMPOSER_INSTALL_DIR}/composer ${COMPOSER_INSTALL_DIR}/composer
+COPY --from=builder /root/.composer/vendor /root/.composer/vendor
+COPY --from=builder ${PHP_TMP_LIB_DIR} /usr/lib/
+
+# 安装运行时依赖并优化配置
 RUN set -ex; \
     apk add --no-cache \
         libxml2 \
@@ -217,18 +223,36 @@ RUN set -ex; \
     # 创建配置目录
     mkdir -p /config; \
     chown phpdever:phpdever /config; \
+    # 优化PHP配置
+    sed -i \
+        -e 's/expose_php = On/expose_php = Off/' \
+        -e 's/memory_limit = 128M/memory_limit = 256M/' \
+        -e 's/upload_max_filesize = 2M/upload_max_filesize = 50M/' \
+        -e 's/post_max_size = 8M/post_max_size = 50M/' \
+        -e 's/max_execution_time = 30/max_execution_time = 600/' \
+        -e 's/max_input_time = 60/max_input_time = 600/' \
+        ${PHP_INSTALL_DIR}/etc/php.ini; \
+    # 优化PHP-FPM配置
+    sed -i \
+        -e 's/;emergency_restart_threshold = 0/emergency_restart_threshold = 10/' \
+        -e 's/;emergency_restart_interval = 0/emergency_restart_interval = 1m/' \
+        -e 's/;process_control_timeout = 0/process_control_timeout = 10s/' \
+        ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    # 优化www池配置
+    sed -i \
+        -e 's/pm = dynamic/pm = static/' \
+        -e 's/pm.max_children = 5/pm.max_children = 20/' \
+        -e 's/pm.start_servers = 2/pm.start_servers = 5/' \
+        -e 's/pm.min_spare_servers = 1/pm.min_spare_servers = 5/' \
+        -e 's/pm.max_spare_servers = 3/pm.max_spare_servers = 20/' \
+        -e 's/;pm.max_requests = 500/pm.max_requests = 1000/' \
+        ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
     # 清理
     rm -rf \
         /var/cache/apk/* \
         /var/tmp/* \
         /tmp/* \
     ;
-
-# 从构建阶段复制PHP和工具
-COPY --from=builder ${PHP_INSTALL_DIR} ${PHP_INSTALL_DIR}
-COPY --from=builder ${COMPOSER_INSTALL_DIR}/composer ${COMPOSER_INSTALL_DIR}/composer
-COPY --from=builder /root/.composer/vendor /root/.composer/vendor
-COPY --from=builder ${PHP_TMP_LIB_DIR} /usr/lib/
 
 # 添加分析脚本
 COPY --chmod=755 root/ /
