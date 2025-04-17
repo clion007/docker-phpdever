@@ -19,40 +19,50 @@ ARG PHP_LIB_DIR
 ARG PHP_TMP_LIB_DIR
 ARG COMPOSER_INSTALL_DIR
 
+# 复制依赖库脚本
+COPY deplib/cplibfiles.sh /usr/local/bin/
+
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
     set -ex; \
     # 安装依赖
     apk add --no-cache --virtual .build-deps \
+        git \
         alpine-sdk \
         autoconf \
-        curl \
-        curl-dev \
-        libxml2-dev \
-        openssl-dev \
-        openssl \
-        libpng-dev \
-        jpeg-dev \
-        freetype-dev \
-        oniguruma-dev \
-        libzip-dev \
-        icu-dev \
-        sqlite-dev \
-        libsodium-dev \
-        linux-headers \
+        argon2-dev \
         bison \
-        re2c \
-        git \
-        unzip \
-        tar \
-        ca-certificates \
         bzip2-dev \
-        libtool \
-        readline-dev \
-        postgresql-dev \
-        libmemcached-dev \
+        curl-dev \
+        enchant2-dev \
+        freetype-dev \
+        gdbm-dev \
+        gettext-dev \
+        gmp-dev \
+        icu-dev \
+        libavif-dev \
+        libedit-dev \
+        libical-dev \
+        libjpeg-turbo-dev \
+        libpng-dev \
+        libpq-dev \
+        lmdb-dev \
+        oniguruma-dev \
+        libsodium-dev \
+        libwebp-dev \
+        libxml2-dev \
+        libxpm-dev \
         libxslt-dev \
-        pcre-dev \
+        libzip-dev \
+        net-snmp-dev \
+        openldap-dev \
+        openssl-dev \
+        pcre2-dev \
+        postgresql-dev \
+        sqlite-dev \
+        tidyhtml-dev \
+        unixodbc-dev \
+        zlib-dev \
     ; \
     # 下载并编译PHP
     mkdir -p /usr/src; \
@@ -91,7 +101,6 @@ RUN --mount=type=cache,target=/var/cache/apk \
         --enable-pcntl \
         --enable-posix \
         --enable-ast \
-        --enable-dtrace \
         --with-pcre-jit \
         --with-bz2 \
         --with-curl \
@@ -115,27 +124,19 @@ RUN --mount=type=cache,target=/var/cache/apk \
     # 编译和安装PHP
     make -j$(nproc); \
     make install; \
-    # 创建配置目录
-    mkdir -p ${PHP_INSTALL_DIR}/etc/conf.d; \
-    # 复制配置文件
-    cp php.ini-development ${PHP_INSTALL_DIR}/etc/php.ini; \
-    cp ${PHP_INSTALL_DIR}/etc/php-fpm.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
-    cp ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
     # 安装PECL扩展
     cd /usr/src; \
-    ${PHP_INSTALL_DIR}/bin/pecl install xdebug; \
-    ${PHP_INSTALL_DIR}/bin/pecl install redis; \
-    ${PHP_INSTALL_DIR}/bin/pecl install memcached; \
-    # 启用扩展
-    echo "extension=redis.so" > ${PHP_INSTALL_DIR}/etc/conf.d/redis.ini; \
-    echo "extension=memcached.so" > ${PHP_INSTALL_DIR}/etc/conf.d/memcached.ini; \
-    echo "zend_extension=xdebug.so" > ${PHP_INSTALL_DIR}/etc/conf.d/xdebug.ini; \
-    # 安装Composer
-    RUN --mount=type=cache,target=/root/.composer/cache \
-        curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
-            --install-dir=${COMPOSER_INSTALL_DIR} \
-            --filename=composer \
-            --version=${COMPOSER_VERSION}; \
+    ${PHP_INSTALL_DIR}/bin/pecl channel-update pecl.php.net; \
+    ${PHP_INSTALL_DIR}/bin/pecl install -o -f xdebug; \
+    ${PHP_INSTALL_DIR}/bin/pecl install -o -f redis; \
+    ${PHP_INSTALL_DIR}/bin/pecl install -o -f memcached;
+# 安装Composer和工具
+RUN --mount=type=cache,target=/root/.composer/cache \
+    # 安装 composer
+    curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
+        --install-dir=${COMPOSER_INSTALL_DIR} \
+        --filename=composer \
+        --version=${COMPOSER_VERSION}; \
     # 安装全局工具
     ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
@@ -157,22 +158,10 @@ RUN --mount=type=cache,target=/var/cache/apk \
         phploc/phploc \
         exakat/exakat \
     ; \
-    # 配置PHPCompatibility
-    mkdir -p /root/.composer/vendor/squizlabs/php_codesniffer/src/Standards/; \
-    ln -s /root/.composer/vendor/phpcompatibility/php-compatibility /root/.composer/vendor/squizlabs/php_codesniffer/src/Standards/PHPCompatibility; \
-    # 复制动态库到指定目录
+    # 复制系统依赖库
     mkdir -p ${PHP_TMP_LIB_DIR}; \
-    # 复制PHP相关的动态库
-    for lib in $(find ${PHP_LIB_DIR} -name "*.so" -o -name "*.so.*"); do \
-        cp -L ${lib} ${PHP_TMP_LIB_DIR}/; \
-        # 获取依赖并复制
-        deps=$(ldd ${lib} 2>/dev/null | awk '{print $3}' | grep -v "not found" | grep -v "^$"); \
-        for dep in ${deps}; do \
-            if [ -f "${dep}" ] && [ ! -f "${PHP_TMP_LIB_DIR}/$(basename ${dep})" ]; then \
-                cp -L ${dep} ${PHP_TMP_LIB_DIR}/; \
-            fi \
-        done \
-    done; \
+    chmod +x /usr/local/bin/cplibfiles.sh; \
+    /usr/local/bin/cplibfiles.sh ${PHP_TMP_LIB_DIR}; \
     # 清理
     cd /; \
     rm -rf /usr/src/*; \
@@ -197,19 +186,19 @@ LABEL maintainer="Clion Nihe Email: clion007@126.com"
 LABEL description="PHP代码分析工具集，用于项目版本升级和兼容性分析"
 
 # 设置环境变量
-ENV PATH="${PHP_INSTALL_DIR}/bin:${PHP_INSTALL_DIR}/sbin:/root/.composer/vendor/bin:${PATH}"
+ENV PATH="${PHP_INSTALL_DIR}/bin:${PHP_INSTALL_DIR}/sbin:/.composer/vendor/bin:${PATH}"
 ENV PHP_VERSION=${PHP_VERSION}
 ENV COMPOSER_VERSION=${COMPOSER_VERSION}
-ENV XDEBUG_MODE=off
 ENV PHP_LIB_DIR=${PHP_LIB_DIR}
+ENV PHPDEVER_TOOLS_PATH="/phpdever"
 
-# 从构建阶段复制PHP和工具
+# 从构建阶段复制文件
 COPY --from=builder ${PHP_INSTALL_DIR} ${PHP_INSTALL_DIR}
 COPY --from=builder ${COMPOSER_INSTALL_DIR}/composer ${COMPOSER_INSTALL_DIR}/composer
-COPY --from=builder /root/.composer/vendor /root/.composer/vendor
+COPY --from=builder /root/.composer/vendor /.composer/vendor
 COPY --from=builder ${PHP_TMP_LIB_DIR} /usr/lib/
 
-# 安装运行时依赖并优化配置
+# 安装运行时依赖并配置环境
 RUN set -ex; \
     # 安装虚拟包用于用户操作
     apk add --no-cache --virtual .user-deps shadow; \
@@ -220,10 +209,41 @@ RUN set -ex; \
     # 创建用户和组
     groupadd -g 1000 phpdever; \
     useradd -u 1000 -s /bin/sh -g 1000 phpdever; \
-    # 创建配置目录
-    mkdir -p /config; \
+    # 创建必要目录
+    mkdir -p /config ${PHP_INSTALL_DIR}/etc/conf.d /.composer/vendor/squizlabs/php_codesniffer/src/Standards/; \
     chown phpdever:phpdever /config; \
-    # 优化PHP配置
+    # 配置 PHP
+    cp ${PHP_INSTALL_DIR}/etc/php.ini.default ${PHP_INSTALL_DIR}/etc/php.ini; \
+    cp ${PHP_INSTALL_DIR}/etc/php-fpm.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    cp ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
+    # 确保PHP命令可用
+    ln -sf ${PHP_INSTALL_DIR}/bin/php /usr/bin/php; \
+    ln -sf ${PHP_INSTALL_DIR}/sbin/php-fpm /usr/sbin/php-fpm; \
+    # PHP-FPM配置
+    sed -i \
+        -e "s#^error_log =.*#error_log = /config/log/php/error.log#g" \
+        -e "s#^pid =.*#pid = /run/php-fpm.pid#g" \
+        ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    # PHP-FPM www池配置
+    sed -i \
+        -e "s#^user =.*#user = phpdever#g" \
+        -e "s#^group =.*#group = phpdever#g" \
+        -e "s#^listen =.*#listen = 0.0.0.0:9000#g" \
+        -e "s#^listen.owner =.*#listen.owner = phpdever#g" \
+        -e "s#^listen.group =.*#listen.group = phpdever#g" \
+        -e "s#^;catch_workers_output =.*#catch_workers_output = yes#g" \
+        -e "s#^;decorate_workers_output =.*#decorate_workers_output = no#g" \
+        ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
+    # 创建日志目录
+    mkdir -p /config/log/php; \
+    chown -R phpdever:phpdever /config/log; \
+    # 启用扩展
+    echo "extension=redis.so" > ${PHP_INSTALL_DIR}/etc/conf.d/redis.ini; \
+    echo "extension=memcached.so" > ${PHP_INSTALL_DIR}/etc/conf.d/memcached.ini; \
+    echo "zend_extension=xdebug.so" > ${PHP_INSTALL_DIR}/etc/conf.d/xdebug.ini; \
+    # 配置 PHPCompatibility
+    ln -s /.composer/vendor/phpcompatibility/php-compatibility /.composer/vendor/squizlabs/php_codesniffer/src/Standards/PHPCompatibility; \
+    # PHP 配置优化
     sed -i \
         -e 's/expose_php = On/expose_php = Off/' \
         -e 's/memory_limit = 128M/memory_limit = 256M/' \

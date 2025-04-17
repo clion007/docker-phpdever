@@ -1,10 +1,10 @@
 # Phpdever Docker Image
-[![Build](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml)
+[![Build Status](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/build.yaml)
 [![License](https://img.shields.io/github/license/clion007/docker-phpdever)](https://github.com/clion007/docker-phpdever/blob/main/LICENSE)
 ![GitHub top language](https://img.shields.io/github/languages/top/clion007/docker-phpdever)
 [![Packages retention policy](https://github.com/clion007/docker-phpdever/actions/workflows/packages-retention-policy.yaml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/packages-retention-policy.yaml)
 
-This repository is a docker image based on official php, composer and alpine docker images to help you to build and test your PHP projects with different PHP version.<br>
+This repository is a docker image based on official php, composer and my base alpine docker images to help you to build and test your PHP projects with different PHP version.<br>
 This docker image contains a necessary tools you need to analyze and test your PHP project
 * xdebug
 * phpunit
@@ -16,14 +16,30 @@ This docker image contains a necessary tools you need to analyze and test your P
 * phpmd
 * phpcpd (available from php 7.3 version)
 
-Below is the list of docker images available by PHP versions:
+Below is the list of docker images available by PHP versions both on aliyun and docker hub registry:
+
+## Docker Hub Registry
 
 | PHP version | Docker image tags                                                                        |
 |-------------|------------------------------------------------------------------------------------------|
-| PHP 8.4     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.4.2` |
-| PHP 8.3     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.3.15`                                          |
-| PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.2.27`                                          |
-| PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.1.31`                                          |
+| PHP 8.4     | `clion007/phpdever:latest`<br>`clion007/phpdever:php8.4.6`                               |
+| PHP 8.3     | `clion007/phpdever:php8.3.20`                                                            |
+| PHP 8.2     | `clion007/phpdever:php8.2.28`                                                            |
+| PHP 8.1     | `clion007/phpdever:php8.1.32`                                                            |
+| PHP 8.0     | `clion007/phpdever:php8.0.30`                                                            |
+| PHP 7.4     | `clion007/phpdever:php7.4.33`                                                            |
+| PHP 7.3     | `clion007/phpdever:php7.3.33`                                                            |
+| PHP 7.2     | `clion007/phpdever:php7.2.34`                                                            |
+
+## Aliyun Registry
+If you want to use the image from Aliyun registry, you can use the following image tags:
+
+| PHP version | Docker image tags                                                                        |
+|-------------|------------------------------------------------------------------------------------------|
+| PHP 8.4     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest`<br>`registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.4.6` |
+| PHP 8.3     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.3.20`                                          |
+| PHP 8.2     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.2.28`                                          |
+| PHP 8.1     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.1.32`                                          |
 | PHP 8.0     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php8.0.30`                                          |
 | PHP 7.4     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php7.4.33`                                          |
 | PHP 7.3     | `registry.cn-chengdu.aliyuncs.com/clion/phpdever:php7.3.33`                                          |
@@ -33,7 +49,7 @@ Below is the list of docker images available by PHP versions:
 
 To help you get started creating a container from this image you can either use docker-compose or the docker cli.
 
-### docker-compose (recommended, [click here for more info](https://https://docs.docker.com/compose/))
+### docker-compose (recommended, [click here for more info](https://docs.docker.com/compose/))
 
 ```
 services:

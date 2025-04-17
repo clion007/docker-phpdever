@@ -1,0 +1,54 @@
+name: PHP Version Update Checker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */12 * * *'  # 每12小时检查一次
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Get latest PHP version
+      id: getPhpVersion
+      run: |
+        PHP_VERSION=$(curl -sS https://www.php.net/downloads.php | grep -o 'PHP [0-9]\+\.[0-9]\+\.[0-9]\+' | head -n1 | cut -d' ' -f2)
+        echo "phpVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Get latest Composer version
+      id: getComposerVersion
+      run: |
+        COMPOSER_VERSION=$(curl -sS https://api.github.com/repos/composer/composer/releases/latest | grep -oP '"tag_name": *"\K[^"]*')
+        echo "composerVersion=$COMPOSER_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Compare versions
+      id: cacheVersion
+      uses: actions/cache@v4
+      with:
+        path: |
+          .phpVersion
+          .composerVersion
+        key: ${{ steps.getPhpVersion.outputs.phpVersion }}-${{ steps.getComposerVersion.outputs.composerVersion }}
+
+    - name: Save new versions
+      if: steps.cacheVersion.outputs.cache-hit != 'true'
+      run: |
+        echo ${{ steps.getPhpVersion.outputs.phpVersion }} > .phpVersion
+        echo ${{ steps.getComposerVersion.outputs.composerVersion }} > .composerVersion
+
+    - name: Trigger build
+      if: steps.cacheVersion.outputs.cache-hit != 'true'
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        event-type: build_image
+        client-payload: '{"php_version": "${{ steps.getPhpVersion.outputs.phpVersion }}", "composer_version": "${{ steps.getComposerVersion.outputs.composerVersion }}"}'
+
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        retain_days: 0
+        keep_minimum_runs: 2
