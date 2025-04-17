@@ -11,12 +11,8 @@ on:
         required: false
         type: string
         description: 'Composer版本 (例如: 2.5.8, 留空则使用最新版本)'
-  push:
-    branches: [ main ]
-    paths:
-      - 'Dockerfile'
-      - '.github/workflows/docker-publish.yml'
-      - 'root/**'
+  repository_dispatch:
+    types: [build_image]
 
 jobs:
   Phpdever_Publish:
