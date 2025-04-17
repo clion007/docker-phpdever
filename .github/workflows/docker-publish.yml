@@ -48,7 +48,8 @@ jobs:
 
         if [ -z "${{ inputs.PHP_VERSION }}" ]; then
           # 获取最新的PHP版本信息
-          PHP_LATEST=$(curl -sS https://www.php.net/releases/index.php | grep -oP 'PHP \d+\.\d+\.\d+' | head -n1 | cut -d' ' -f2) || handle_error "获取PHP版本失败"
+          PHP_LATEST=$(curl -sS 'https://www.php.net/releases/index.php?json=1' | \
+            jq -r 'to_entries | .[0].key') || handle_error "获取PHP版本失败"
           [ -z "$PHP_LATEST" ] && handle_error "无法获取PHP最新版本信息"
           PHP_VERSION=$PHP_LATEST
         else
@@ -56,8 +57,8 @@ jobs:
         fi
         
         if [ -z "${{ inputs.COMPOSER_VERSION }}" ]; then
-          # 使用GitHub API获取Composer最新版本
-          COMPOSER_VERSION=$(curl -sS https://api.github.com/repos/composer/composer/releases/latest | grep -oP '"tag_name": "\K[^"]+') || handle_error "获取Composer版本失败"
+          # 使用纯shell命令获取Composer最新版本
+          COMPOSER_VERSION=$(curl -sS https://api.github.com/repos/composer/composer/releases/latest | grep -oP '"tag_name": *"\K[^"]*') || handle_error "获取Composer版本失败"
           [ -z "$COMPOSER_VERSION" ] && handle_error "无法获取Composer最新版本信息"
         else
           COMPOSER_VERSION=${{ inputs.COMPOSER_VERSION }}
