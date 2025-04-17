@@ -6,11 +6,11 @@ on:
       PHP_VERSION:
         required: false
         type: string
-        description: 'PHP版本 (例如: 7.4.33, 8.0.30, 8.1.31, 留空则使用最新版本)'
+        description: 'PHP版本 (例如: 8.1.31, 留空则获取最新版本)'
       COMPOSER_VERSION:
         required: false
         type: string
-        description: 'Composer版本 (例如: 2.5.8, 留空则使用最新版本)'
+        description: 'Composer版本 (例如: 2.5.8, 留空则获取最新版本)'
   repository_dispatch:
     types: [build_image]
 
@@ -47,9 +47,8 @@ jobs:
         }
 
         if [ -z "${{ inputs.PHP_VERSION }}" ]; then
-          # 获取最新的PHP版本信息
-          PHP_LATEST=$(curl -sS 'https://www.php.net/releases/index.php?json=1' | \
-            jq -r 'to_entries | .[0].key') || handle_error "获取PHP版本失败"
+          # 从下载页面获取最新PHP版本
+          PHP_LATEST=$(curl -sS https://www.php.net/downloads.php | grep -o 'PHP [0-9]\+\.[0-9]\+\.[0-9]\+' | head -n1 | cut -d' ' -f2) || handle_error "获取PHP版本失败"
           [ -z "$PHP_LATEST" ] && handle_error "无法获取PHP最新版本信息"
           PHP_VERSION=$PHP_LATEST
         else

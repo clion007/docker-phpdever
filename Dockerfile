@@ -21,7 +21,6 @@ ARG COMPOSER_INSTALL_DIR
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
-    --mount=type=cache,target=/usr/src \
     set -ex; \
     # 安装依赖
     apk add --no-cache --virtual .build-deps \
@@ -52,8 +51,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
         readline-dev \
         postgresql-dev \
         libmemcached-dev \
-        xsl-dev \
-        systemtap-sdt-dev \
+        libxslt-dev \
         pcre-dev \
     ; \
     # 下载并编译PHP
