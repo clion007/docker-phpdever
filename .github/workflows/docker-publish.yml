@@ -22,27 +22,53 @@ jobs:
   Phpdever_Publish:
     runs-on: ubuntu-latest
     name: Publish Phpdever Image
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
     - name: Get latest versions
       id: getVersion
       run: |
+        # 添加错误处理函数
+        handle_error() {
+          echo "Error: $1"
+          exit 1
+        }
+
         if [ -z "${{ inputs.PHP_VERSION }}" ]; then
-          PHP_VERSION=$(wget -qO- -t1 -T2 https://www.php.net/downloads.php | grep "Changelog" | awk 'NR==1 {print}' | awk '{printf $2}')
+          # 获取最新的PHP版本信息
+          PHP_LATEST=$(curl -sS https://www.php.net/releases/index.php | grep -oP 'PHP \d+\.\d+\.\d+' | head -n1 | cut -d' ' -f2) || handle_error "获取PHP版本失败"
+          [ -z "$PHP_LATEST" ] && handle_error "无法获取PHP最新版本信息"
+          PHP_VERSION=$PHP_LATEST
         else
           PHP_VERSION=${{ inputs.PHP_VERSION }}
         fi
-        PHP_NAME=$(echo $PHP_VERSION | awk -F "." '{print $1$2}')
-        echo "PhpVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
-        echo "PhpName=$PHP_NAME" >> $GITHUB_OUTPUT
+        
         if [ -z "${{ inputs.COMPOSER_VERSION }}" ]; then
-          COMPOSER_VERSION=$(wget -qO- -t1 -T2 https://getcomposer.org/ | grep "Latest" | awk -F ">" '{printf $3}' | awk -F "<" '{printf $1}')
+          # 使用GitHub API获取Composer最新版本
+          COMPOSER_VERSION=$(curl -sS https://api.github.com/repos/composer/composer/releases/latest | grep -oP '"tag_name": "\K[^"]+') || handle_error "获取Composer版本失败"
+          [ -z "$COMPOSER_VERSION" ] && handle_error "无法获取Composer最新版本信息"
         else
           COMPOSER_VERSION=${{ inputs.COMPOSER_VERSION }}
         fi
+        
+        # 输出版本信息
+        echo "PhpVersion=$PHP_VERSION" >> $GITHUB_OUTPUT
         echo "ComposerVersion=$COMPOSER_VERSION" >> $GITHUB_OUTPUT
         echo "使用PHP版本: $PHP_VERSION"
         echo "使用Composer版本: $COMPOSER_VERSION"
@@ -60,8 +86,11 @@ jobs:
         username: ${{ secrets.ALIYUN_USER }}
         password: ${{ secrets.ALIYUN_TOKEN }}
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: registry.cn-chengdu.aliyuncs.com/clion/phpdever
 
     - name: Build and Push Docker images
       id: build
@@ -70,6 +99,7 @@ jobs:
         file: Dockerfile
         context: .
         push: true
+        platforms: linux/amd64,linux/arm64
         build-args: |
           COMPOSER_VERSION=${{ steps.getVersion.outputs.ComposerVersion }}
           PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
@@ -78,6 +108,13 @@ jobs:
           clion007/phpdever:php${{ steps.getVersion.outputs.PhpVersion }}
           registry.cn-chengdu.aliyuncs.com/clion/phpdever:latest
           registry.cn-chengdu.aliyuncs.com/clion/phpdever:php${{ steps.getVersion.outputs.PhpVersion }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
     - name: Build Release Body
       id: getBody

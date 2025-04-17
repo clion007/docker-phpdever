@@ -7,6 +7,7 @@ ARG PHP_INSTALL_DIR=/usr/local/php
 ARG PHP_LIB_DIR=/usr/local/php/lib
 ARG PHP_TMP_LIB_DIR=/phpdever/lib
 ARG COMPOSER_INSTALL_DIR=/usr/local/bin
+ARG BUILDKIT_INLINE_CACHE=1
 
 # 构建基础PHP环境
 FROM alpine:latest AS builder
@@ -18,8 +19,11 @@ ARG PHP_LIB_DIR
 ARG PHP_TMP_LIB_DIR
 ARG COMPOSER_INSTALL_DIR
 
-# 安装构建依赖
-RUN set -ex; \
+# 安装构建依赖并编译PHP
+RUN --mount=type=cache,target=/var/cache/apk \
+    --mount=type=cache,target=/usr/src \
+    set -ex; \
+    # 安装依赖
     apk add --no-cache --virtual .build-deps \
         alpine-sdk \
         autoconf \
@@ -49,6 +53,8 @@ RUN set -ex; \
         postgresql-dev \
         libmemcached-dev \
         xsl-dev \
+        systemtap-sdt-dev \
+        pcre-dev \
     ; \
     # 下载并编译PHP
     mkdir -p /usr/src; \
@@ -80,6 +86,15 @@ RUN set -ex; \
         --enable-xml \
         --enable-xmlreader \
         --enable-xmlwriter \
+        --enable-cgi \
+        --enable-phpdbg \
+        --enable-debug \
+        --enable-short-tags \
+        --enable-pcntl \
+        --enable-posix \
+        --enable-ast \
+        --enable-dtrace \
+        --with-pcre-jit \
         --with-bz2 \
         --with-curl \
         --with-freetype \
@@ -118,7 +133,11 @@ RUN set -ex; \
     echo "extension=memcached.so" > ${PHP_INSTALL_DIR}/etc/conf.d/memcached.ini; \
     echo "zend_extension=xdebug.so" > ${PHP_INSTALL_DIR}/etc/conf.d/xdebug.ini; \
     # 安装Composer
-    curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- --install-dir=${COMPOSER_INSTALL_DIR} --filename=composer --version=${COMPOSER_VERSION}; \
+    RUN --mount=type=cache,target=/root/.composer/cache \
+        curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
+            --install-dir=${COMPOSER_INSTALL_DIR} \
+            --filename=composer \
+            --version=${COMPOSER_VERSION}; \
     # 安装全局工具
     ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
@@ -194,28 +213,11 @@ COPY --from=builder ${PHP_TMP_LIB_DIR} /usr/lib/
 
 # 安装运行时依赖并优化配置
 RUN set -ex; \
+    # 安装虚拟包用于用户操作
+    apk add --no-cache --virtual .user-deps shadow; \
+    # 安装运行时依赖
     apk add --no-cache \
-        libxml2 \
-        openssl \
-        libpng \
-        jpeg \
-        freetype \
-        oniguruma \
-        libzip \
-        icu-libs \
-        sqlite-libs \
-        libsodium \
-        bzip2-libs \
-        readline \
-        postgresql-libs \
-        libmemcached-libs \
-        libxslt \
-        git \
-        shadow \
         su-exec \
-        jq \
-        grep \
-        diffutils \
     ; \
     # 创建用户和组
     groupadd -g 1000 phpdever; \
@@ -231,6 +233,7 @@ RUN set -ex; \
         -e 's/post_max_size = 8M/post_max_size = 50M/' \
         -e 's/max_execution_time = 30/max_execution_time = 600/' \
         -e 's/max_input_time = 60/max_input_time = 600/' \
+        -e 's/short_open_tag = Off/short_open_tag = On/' \
         ${PHP_INSTALL_DIR}/etc/php.ini; \
     # 优化PHP-FPM配置
     sed -i \
@@ -247,6 +250,8 @@ RUN set -ex; \
         -e 's/pm.max_spare_servers = 3/pm.max_spare_servers = 20/' \
         -e 's/;pm.max_requests = 500/pm.max_requests = 1000/' \
         ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
+    # 删除用户操作相关的虚拟包
+    apk del --no-network .user-deps; \
     # 清理
     rm -rf \
         /var/cache/apk/* \
