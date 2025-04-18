@@ -25,6 +25,7 @@ WORKDIR /tmp
 COPY deplib/cplibfiles.sh /usr/local/bin/
 ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
 ADD https://getcomposer.org/installer composer-setup.php
+ADD http://pear.php.net/go-pear.phar go-pear.php
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -129,12 +130,14 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make -j$(nproc); \
     make install; \
     \
-    # 安装PECL扩展
+    # 安装PECL及相关扩展
     cd /tmp; \
-    ${PHP_INSTALL_DIR}/bin/pecl channel-update pecl.php.net; \
-    ${PHP_INSTALL_DIR}/bin/pecl install -o -f xdebug; \
-    ${PHP_INSTALL_DIR}/bin/pecl install -o -f redis; \
-    ${PHP_INSTALL_DIR}/bin/pecl install -o -f memcached;
+    php go-pear.php; \
+    pecl channel-update pecl.php.net; \
+    cd ${PHP_INSTALL_DIR}/bin; \
+    pecl install -o -f xdebug; \
+    pecl install -o -f redis; \
+    pecl install -o -f memcached;
 
 # 安装Composer和工具
 RUN --mount=type=cache,target=/root/.composer/cache \
