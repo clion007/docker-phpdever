@@ -21,7 +21,7 @@ ARG COMPOSER_INSTALL_DIR
 
 # 添加需要文件
 COPY deplib/cplibfiles.sh /usr/local/bin/
-ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz
+ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
 ADD https://getcomposer.org/installer composer-setup.php
 
 # 安装构建依赖并编译PHP
