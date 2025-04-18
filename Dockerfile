@@ -19,6 +19,8 @@ ARG PHP_LIB_DIR
 ARG PHP_TMP_LIB_DIR
 ARG COMPOSER_INSTALL_DIR
 
+WORKDIR /tmp
+
 # 添加需要文件
 COPY deplib/cplibfiles.sh /usr/local/bin/
 ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
@@ -67,13 +69,11 @@ RUN --mount=type=cache,target=/var/cache/apk \
         unixodbc-dev \
         zlib-dev \
     ; \
-    # 下载并编译PHP
-    mkdir -p /usr/src; \
-    cd /usr/src; \
-    # curl -fsSL "https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz" -o php.tar.gz; \
+    \
+    # 编译安装PHP
     tar -xzf php.tar.gz; \
     cd php-${PHP_VERSION}; \
-    # 配置PHP
+    \
     ./configure \
         --prefix=${PHP_INSTALL_DIR} \
         --with-config-file-path=${PHP_INSTALL_DIR}/etc \
@@ -124,20 +124,21 @@ RUN --mount=type=cache,target=/var/cache/apk \
         --with-pgsql \
         --with-pdo-pgsql \
     ; \
-    # 编译和安装PHP
+    \
     make -j$(nproc); \
     make install; \
+    \
     # 安装PECL扩展
     cd /usr/src; \
     ${PHP_INSTALL_DIR}/bin/pecl channel-update pecl.php.net; \
     ${PHP_INSTALL_DIR}/bin/pecl install -o -f xdebug; \
     ${PHP_INSTALL_DIR}/bin/pecl install -o -f redis; \
     ${PHP_INSTALL_DIR}/bin/pecl install -o -f memcached;
+
 # 安装Composer和工具
 RUN --mount=type=cache,target=/root/.composer/cache \
     # 安装 composer
-    # curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
-    ${PHP_INSTALL_DIR}/bin/php composer-setup.php \
+    ${PHP_INSTALL_DIR}/bin/php /tmp/composer-setup.php \
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
         --version=${COMPOSER_VERSION}; \
@@ -166,9 +167,8 @@ RUN --mount=type=cache,target=/root/.composer/cache \
     mkdir -p ${PHP_TMP_LIB_DIR}; \
     chmod +x /usr/local/bin/cplibfiles.sh; \
     /usr/local/bin/cplibfiles.sh ${PHP_TMP_LIB_DIR}; \
-    # 清理
-    cd /; \
-    rm -rf /usr/src/*; \
+    \
+    # 清理文件
     apk del --no-network .build-deps; \
     rm -rf \
         /var/cache/apk/* \
