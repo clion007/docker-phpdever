@@ -160,12 +160,14 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make install; \
 \
     # 安装Composer和工具
-    mkdir -p /root/.composer/cache /root/.composer/vendor && \
+    mkdir -p /opt/composer/vendor && \
     # 安装 composer
     ${PHP_INSTALL_DIR}/bin/php /tmp/composer-setup.php \
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
         --version=${COMPOSER_VERSION} && \
+    # 设置Composer全局目录
+    ${COMPOSER_INSTALL_DIR}/composer config -g vendor-dir /opt/composer/vendor && \
     # 安装全局工具
     ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
@@ -211,7 +213,7 @@ LABEL maintainer="Clion Nihe Email: clion007@126.com"
 LABEL description="PHP代码分析工具集，用于项目版本升级和兼容性分析"
 
 # 设置环境变量
-ENV PATH="${PHP_INSTALL_DIR}/bin:${PHP_INSTALL_DIR}/sbin:/.composer/vendor/bin:${PATH}"
+ENV PATH="${PHP_INSTALL_DIR}/bin:${PHP_INSTALL_DIR}/sbin:/opt/composer/vendor/bin:${PATH}"
 ENV PHP_VERSION=${PHP_VERSION}
 ENV COMPOSER_VERSION=${COMPOSER_VERSION}
 ENV PHP_LIB_DIR=${PHP_LIB_DIR}
@@ -220,7 +222,7 @@ ENV PHPDEVER_TOOLS_PATH="/phpdever"
 # 从构建阶段复制文件
 COPY --from=builder ${PHP_INSTALL_DIR} ${PHP_INSTALL_DIR}
 COPY --from=builder ${COMPOSER_INSTALL_DIR}/composer ${COMPOSER_INSTALL_DIR}/composer
-COPY --from=builder /root/.composer/vendor /.composer/vendor
+COPY --from=builder /opt/composer/vendor /opt/composer/vendor
 COPY --from=builder ${PHP_TMP_LIB_DIR} /usr/lib/
 
 # 安装运行时依赖并配置环境
