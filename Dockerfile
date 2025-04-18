@@ -137,7 +137,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
 RUN --mount=type=cache,target=/root/.composer/cache \
     # 安装 composer
     # curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
-    ${PHP_INSTALL_DIR}/bin/php composer-setup.php
+    ${PHP_INSTALL_DIR}/bin/php composer-setup.php \
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
         --version=${COMPOSER_VERSION}; \
