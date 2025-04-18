@@ -168,8 +168,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
         --version=${COMPOSER_VERSION}; \
     # 设置Composer全局目录
     ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer config -g vendor-dir /opt/composer/vendor; \
-    # 配置允许的插件
-    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer global config allow-plugins.infection/extension-installer true; \
+    # 一次性允许所有插件
+    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer global config allow-plugins true; \
     # 安装全局工具
     ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
