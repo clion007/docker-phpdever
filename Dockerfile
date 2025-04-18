@@ -130,14 +130,28 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make -j$(nproc); \
     make install; \
     \
-    # 安装PECL及相关扩展
+    # 安装PEAR/PECL
     cd /tmp; \
-    php go-pear.php; \
-    pecl channel-update pecl.php.net; \
-    cd ${PHP_INSTALL_DIR}/bin; \
-    pecl install -o -f xdebug; \
-    pecl install -o -f redis; \
-    pecl install -o -f memcached;
+    ${PHP_INSTALL_DIR}/bin/php go-pear.php <<EOF
+/usr/local/php
+/usr/local/php/etc/pear.conf
+/usr/local/php/bin
+/usr/local/php/share/pear
+/usr/local/php/share/tests
+/usr/local/php/share/docs
+/usr/local/php/share/data
+/usr/local/php/lib/php
+/usr/local/php/data
+/usr/local/php/doc
+/usr/local/php/test
+y
+EOF \
+    \
+    # 安装PECL扩展
+    ${PHP_INSTALL_DIR}/bin/pecl channel-update pecl.php.net; \
+    ${PHP_INSTALL_DIR}/bin/pecl install -o -f xdebug; \
+    ${PHP_INSTALL_DIR}/bin/pecl install -o -f redis; \
+    ${PHP_INSTALL_DIR}/bin/pecl install -o -f memcached;
 
 # 安装Composer和工具
 RUN --mount=type=cache,target=/root/.composer/cache \
