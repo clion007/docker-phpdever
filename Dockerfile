@@ -157,16 +157,15 @@ RUN --mount=type=cache,target=/var/cache/apk \
     ${PHP_INSTALL_DIR}/bin/phpize; \
     ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
     make -j$(nproc); \
-    make install;
-
-# 安装Composer和工具
-RUN mkdir -p /root/.composer/cache /root/.composer/vendor && \
-    --mount=type=cache,target=/root/.composer/cache \
+    make install; \
+\
+    # 安装Composer和工具
+    mkdir -p /root/.composer/cache /root/.composer/vendor && \
     # 安装 composer
     ${PHP_INSTALL_DIR}/bin/php /tmp/composer-setup.php \
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
-        --version=${COMPOSER_VERSION}; \
+        --version=${COMPOSER_VERSION} && \
     # 安装全局工具
     ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
@@ -186,20 +185,17 @@ RUN mkdir -p /root/.composer/cache /root/.composer/vendor && \
         phpmetrics/phpmetrics \
         pdepend/pdepend \
         phploc/phploc \
-        exakat/exakat \
-    ; \
+        exakat/exakat && \
     # 复制系统依赖库
-    mkdir -p ${PHP_TMP_LIB_DIR}; \
-    chmod +x /usr/local/bin/cplibfiles.sh; \
-    /usr/local/bin/cplibfiles.sh ${PHP_TMP_LIB_DIR}; \
-    \
+    mkdir -p ${PHP_TMP_LIB_DIR} && \
+    chmod +x /usr/local/bin/cplibfiles.sh && \
+    /usr/local/bin/cplibfiles.sh ${PHP_TMP_LIB_DIR} && \
     # 清理文件
-    apk del --no-network .build-deps; \
+    apk del --no-network .build-deps && \
     rm -rf \
         /var/cache/apk/* \
         /var/tmp/* \
-        /tmp/* \
-    ;
+        /tmp/*
 
 # 构建最终镜像
 FROM clion007/alpine:latest
