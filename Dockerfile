@@ -130,7 +130,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make install; \
     \
     # 安装PECL扩展
-    cd /usr/src; \
+    cd /tmp; \
     ${PHP_INSTALL_DIR}/bin/pecl channel-update pecl.php.net; \
     ${PHP_INSTALL_DIR}/bin/pecl install -o -f xdebug; \
     ${PHP_INSTALL_DIR}/bin/pecl install -o -f redis; \
