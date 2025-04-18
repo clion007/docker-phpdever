@@ -25,7 +25,7 @@ WORKDIR /tmp
 COPY deplib/cplibfiles.sh /usr/local/bin/
 ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
 ADD https://getcomposer.org/installer composer-setup.php
-ADD http://pear.php.net/go-pear.phar go-pear.php
+# ADD http://pear.php.net/go-pear.phar go-pear.php
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -130,28 +130,34 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make -j$(nproc); \
     make install; \
     \
-    # 安装PEAR/PECL
+    # 编译安装扩展
     cd /tmp; \
-    ${PHP_INSTALL_DIR}/bin/php go-pear.php <<EOF
-/usr/local/php
-/usr/local/php/etc/pear.conf
-/usr/local/php/bin
-/usr/local/php/share/pear
-/usr/local/php/share/tests
-/usr/local/php/share/docs
-/usr/local/php/share/data
-/usr/local/php/lib/php
-/usr/local/php/data
-/usr/local/php/doc
-/usr/local/php/test
-y
-EOF \
+    # 安装 xdebug
+    git clone --depth=1 https://github.com/xdebug/xdebug.git; \
+    cd xdebug; \
+    ${PHP_INSTALL_DIR}/bin/phpize; \
+    ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
+    make -j$(nproc); \
+    make install; \
     \
-    # 安装PECL扩展
-    ${PHP_INSTALL_DIR}/bin/pecl channel-update pecl.php.net; \
-    ${PHP_INSTALL_DIR}/bin/pecl install -o -f xdebug; \
-    ${PHP_INSTALL_DIR}/bin/pecl install -o -f redis; \
-    ${PHP_INSTALL_DIR}/bin/pecl install -o -f memcached;
+    # 安装 redis
+    cd /tmp; \
+    git clone --depth=1 https://github.com/phpredis/phpredis.git; \
+    cd phpredis; \
+    ${PHP_INSTALL_DIR}/bin/phpize; \
+    ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
+    make -j$(nproc); \
+    make install; \
+    \
+    # 安装 memcached
+    cd /tmp; \
+    apk add --no-cache libmemcached-dev; \
+    git clone --depth=1 https://github.com/php-memcached-dev/php-memcached.git; \
+    cd php-memcached; \
+    ${PHP_INSTALL_DIR}/bin/phpize; \
+    ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
+    make -j$(nproc); \
+    make install;
 
 # 安装Composer和工具
 RUN --mount=type=cache,target=/root/.composer/cache \
