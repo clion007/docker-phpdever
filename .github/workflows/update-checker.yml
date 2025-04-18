@@ -1,4 +1,4 @@
-name: PHP Version Update Checker
+name: PHPDever Update Checker
 
 on:
   workflow_dispatch:
@@ -45,7 +45,6 @@ jobs:
       uses: peter-evans/repository-dispatch@v3
       with:
         event-type: build_image
-        client-payload: '{"php_version": "${{ steps.getPhpVersion.outputs.phpVersion }}", "composer_version": "${{ steps.getComposerVersion.outputs.composerVersion }}"}'
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@v2
