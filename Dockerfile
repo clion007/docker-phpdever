@@ -166,10 +166,10 @@ RUN --mount=type=cache,target=/var/cache/apk \
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
         --version=${COMPOSER_VERSION} && \
-    # 设置Composer全局目录
-    ${COMPOSER_INSTALL_DIR}/composer config -g vendor-dir /opt/composer/vendor && \
-    # 安装全局工具
-    ${COMPOSER_INSTALL_DIR}/composer global require \
+    # 设置Composer全局目录 - 使用完整路径调用PHP
+    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer config -g vendor-dir /opt/composer/vendor && \
+    # 安装全局工具 - 同样使用完整路径调用PHP
+    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
         rector/rector \
         phpstan/phpstan \
