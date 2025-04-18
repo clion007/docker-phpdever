@@ -19,7 +19,7 @@ done
 
 # 复制 Composer 全局工具依赖的系统库
 echo "Copying Composer global tools dependencies..."
-for bin in $(find /root/.composer/vendor/bin -type f); do
+for bin in $(find /opt/composer/vendor/bin -type f); do
     if [ -x "${bin}" ]; then
         ldd "${bin}" 2>/dev/null | while read -r line; do
             if echo "${line}" | grep -q "=> /lib/" || echo "${line}" | grep -q "=> /usr/lib/"; then
@@ -32,4 +32,4 @@ for bin in $(find /root/.composer/vendor/bin -type f); do
     fi
 done
 
-echo "Library copy completed.
+echo "Library copy completed."
