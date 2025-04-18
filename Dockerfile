@@ -19,8 +19,10 @@ ARG PHP_LIB_DIR
 ARG PHP_TMP_LIB_DIR
 ARG COMPOSER_INSTALL_DIR
 
-# 复制依赖库脚本
+# 添加需要文件
 COPY deplib/cplibfiles.sh /usr/local/bin/
+ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz
+ADD https://getcomposer.org/installer composer-setup.php
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -28,7 +30,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     # 安装依赖
     apk add --no-cache --virtual .build-deps \
         git \
-        curl \
+        # curl \
         alpine-sdk \
         autoconf \
         argon2-dev \
@@ -68,7 +70,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     # 下载并编译PHP
     mkdir -p /usr/src; \
     cd /usr/src; \
-    curl -fsSL "https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz" -o php.tar.gz; \
+    # curl -fsSL "https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz" -o php.tar.gz; \
     tar -xzf php.tar.gz; \
     cd php-${PHP_VERSION}; \
     # 配置PHP
@@ -134,7 +136,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
 # 安装Composer和工具
 RUN --mount=type=cache,target=/root/.composer/cache \
     # 安装 composer
-    curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
+    # curl -sS https://getcomposer.org/installer | ${PHP_INSTALL_DIR}/bin/php -- \
+    ${PHP_INSTALL_DIR}/bin/php composer-setup.php
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
         --version=${COMPOSER_VERSION}; \
