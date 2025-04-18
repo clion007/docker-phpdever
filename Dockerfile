@@ -160,15 +160,17 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make install; \
 \
     # 安装Composer和工具
-    mkdir -p /opt/composer/vendor && \
+    mkdir -p /opt/composer/vendor; \
     # 安装 composer
     ${PHP_INSTALL_DIR}/bin/php /tmp/composer-setup.php \
         --install-dir=${COMPOSER_INSTALL_DIR} \
         --filename=composer \
-        --version=${COMPOSER_VERSION} && \
-    # 设置Composer全局目录 - 使用完整路径调用PHP
-    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer config -g vendor-dir /opt/composer/vendor && \
-    # 安装全局工具 - 同样使用完整路径调用PHP
+        --version=${COMPOSER_VERSION}; \
+    # 设置Composer全局目录
+    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer config -g vendor-dir /opt/composer/vendor; \
+    # 配置允许的插件
+    ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer global config allow-plugins.infection/extension-installer true; \
+    # 安装全局工具
     ${PHP_INSTALL_DIR}/bin/php ${COMPOSER_INSTALL_DIR}/composer global require \
         phpunit/phpunit \
         rector/rector \
@@ -187,13 +189,13 @@ RUN --mount=type=cache,target=/var/cache/apk \
         phpmetrics/phpmetrics \
         pdepend/pdepend \
         phploc/phploc \
-        exakat/exakat && \
+        exakat/exakat; \
     # 复制系统依赖库
-    mkdir -p ${PHP_TMP_LIB_DIR} && \
-    chmod +x /usr/local/bin/cplibfiles.sh && \
-    /usr/local/bin/cplibfiles.sh ${PHP_TMP_LIB_DIR} && \
+    mkdir -p ${PHP_TMP_LIB_DIR}; \
+    chmod +x /usr/local/bin/cplibfiles.sh; \
+    /usr/local/bin/cplibfiles.sh ${PHP_TMP_LIB_DIR}; \
     # 清理文件
-    apk del --no-network .build-deps && \
+    apk del --no-network .build-deps; \
     rm -rf \
         /var/cache/apk/* \
         /var/tmp/* \
