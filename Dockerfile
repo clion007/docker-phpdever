@@ -28,6 +28,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     # 安装依赖
     apk add --no-cache --virtual .build-deps \
         git \
+        curl \
         alpine-sdk \
         autoconf \
         argon2-dev \
