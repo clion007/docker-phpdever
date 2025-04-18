@@ -160,7 +160,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make install;
 
 # 安装Composer和工具
-RUN --mount=type=cache,target=/root/.composer/cache \
+RUN mkdir -p /root/.composer/cache /root/.composer/vendor && \
+    --mount=type=cache,target=/root/.composer/cache \
     # 安装 composer
     ${PHP_INSTALL_DIR}/bin/php /tmp/composer-setup.php \
         --install-dir=${COMPOSER_INSTALL_DIR} \
