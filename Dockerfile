@@ -52,6 +52,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
         libpng-dev \
         libpq-dev \
         lmdb-dev \
+        readline-dev \
         oniguruma-dev \
         libsodium-dev \
         libwebp-dev \
