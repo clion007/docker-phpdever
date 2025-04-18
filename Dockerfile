@@ -130,7 +130,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make -j$(nproc); \
     make install; \
     \
-    # 编译安装扩展
+    # 编译安装pecl扩展
     cd /tmp; \
     # 安装 xdebug
     git clone --depth=1 https://github.com/xdebug/xdebug.git; \
