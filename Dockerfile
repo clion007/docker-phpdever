@@ -29,10 +29,10 @@ ADD https://getcomposer.org/installer composer-setup.php
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
     set -ex; \
+    \
     # 安装依赖
     apk add --no-cache --virtual .build-deps \
         git \
-        # curl \
         alpine-sdk \
         autoconf \
         argon2-dev \
