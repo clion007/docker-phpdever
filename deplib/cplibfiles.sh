@@ -65,4 +65,4 @@ for lib in libc.so.6 libpthread.so.0 libdl.so.2 libm.so.6 librt.so.1; do
     fi
 done
 
-echo "Library copy completed.
+echo "Library copy completed."
