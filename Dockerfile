@@ -130,26 +130,42 @@ RUN --mount=type=cache,target=/var/cache/apk \
     make -j$(nproc); \
     make install; \
     \
-    # 编译安装pecl扩展
-    cd /tmp; \
-    # 安装 xdebug
-    git clone --depth=1 https://github.com/xdebug/xdebug.git; \
-    cd xdebug; \
-    ${PHP_INSTALL_DIR}/bin/phpize; \
-    ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
-    make -j$(nproc); \
-    make install; \
+    # 创建配置目录并复制配置文件
+    mkdir -p ${PHP_INSTALL_DIR}/etc/conf.d; \
+    # 使用开发环境配置
+    cp php.ini-development ${PHP_INSTALL_DIR}/etc/php.ini; \
+    # 复制并准备 PHP-FPM 配置文件
+    mkdir -p ${PHP_INSTALL_DIR}/etc/php-fpm.d; \
+    cp sapi/fpm/php-fpm.conf.in ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    cp sapi/fpm/www.conf.in ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
+    # 替换配置文件中的变量
+    sed -i "s|@php_fpm_prefix@|${PHP_INSTALL_DIR}|g" ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    sed -i "s|@php_fpm_sysconfdir@|${PHP_INSTALL_DIR}/etc|g" ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    sed -i "s|@php_fpm_localstatedir@|/var|g" ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
+    sed -i "s|@php_fpm_user@|phpdever|g" ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
+    sed -i "s|@php_fpm_group@|phpdever|g" ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
     \
-    # 安装 redis
+    # 安装 PEAR (用于安装 PECL 扩展)
     cd /tmp; \
-    git clone --depth=1 https://github.com/phpredis/phpredis.git; \
-    cd phpredis; \
-    ${PHP_INSTALL_DIR}/bin/phpize; \
-    ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
-    make -j$(nproc); \
-    make install; \
+    curl -fsSL -o /tmp/go-pear.phar https://pear.php.net/go-pear.phar; \
+    ${PHP_INSTALL_DIR}/bin/php /tmp/go-pear.phar -d ${PHP_INSTALL_DIR}/pear; \
     \
-    # 安装 memcached
+    # 创建 pecl 安装函数
+    pecl_install() { \
+        ext=$1; \
+        ${PHP_INSTALL_DIR}/bin/pecl install $ext; \
+        if [ "$2" = "zend" ]; then \
+            echo "zend_extension=$ext.so" > ${PHP_INSTALL_DIR}/etc/conf.d/$ext.ini; \
+        else \
+            echo "extension=$ext.so" > ${PHP_INSTALL_DIR}/etc/conf.d/$ext.ini; \
+        fi; \
+    }; \
+    \
+    # 使用 pecl 安装扩展
+    pecl_install xdebug zend; \
+    pecl_install redis; \
+    \
+    # 安装 memcached (需要特殊处理，因为依赖 libmemcached)
     cd /tmp; \
     apk add --no-cache libmemcached-dev; \
     git clone --depth=1 https://github.com/php-memcached-dev/php-memcached.git; \
@@ -158,7 +174,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     ./configure --with-php-config=${PHP_INSTALL_DIR}/bin/php-config; \
     make -j$(nproc); \
     make install; \
-\
+    echo "extension=memcached.so" > ${PHP_INSTALL_DIR}/etc/conf.d/memcached.ini; \
+    \
     # 安装Composer和工具
     mkdir -p /opt/composer/vendor; \
     # 安装 composer
@@ -241,28 +258,10 @@ RUN set -ex; \
     # 创建必要目录
     mkdir -p /config ${PHP_INSTALL_DIR}/etc/conf.d /.composer/vendor/squizlabs/php_codesniffer/src/Standards/; \
     chown phpdever:phpdever /config; \
-    # 配置 PHP
-    cp ${PHP_INSTALL_DIR}/etc/php.ini.default ${PHP_INSTALL_DIR}/etc/php.ini; \
-    cp ${PHP_INSTALL_DIR}/etc/php-fpm.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
-    cp ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf.default ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
     # 确保PHP命令可用
     ln -sf ${PHP_INSTALL_DIR}/bin/php /usr/bin/php; \
     ln -sf ${PHP_INSTALL_DIR}/sbin/php-fpm /usr/sbin/php-fpm; \
-    # PHP-FPM配置
-    sed -i \
-        -e "s#^error_log =.*#error_log = /config/log/php/error.log#g" \
-        -e "s#^pid =.*#pid = /run/php-fpm.pid#g" \
-        ${PHP_INSTALL_DIR}/etc/php-fpm.conf; \
-    # PHP-FPM www池配置
-    sed -i \
-        -e "s#^user =.*#user = phpdever#g" \
-        -e "s#^group =.*#group = phpdever#g" \
-        -e "s#^listen =.*#listen = 0.0.0.0:9000#g" \
-        -e "s#^listen.owner =.*#listen.owner = phpdever#g" \
-        -e "s#^listen.group =.*#listen.group = phpdever#g" \
-        -e "s#^;catch_workers_output =.*#catch_workers_output = yes#g" \
-        -e "s#^;decorate_workers_output =.*#decorate_workers_output = no#g" \
-        ${PHP_INSTALL_DIR}/etc/php-fpm.d/www.conf; \
+    \
     # 创建日志目录
     mkdir -p /config/log/php; \
     chown -R phpdever:phpdever /config/log; \
