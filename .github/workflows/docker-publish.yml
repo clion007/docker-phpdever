@@ -85,7 +85,17 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: registry.cn-chengdu.aliyuncs.com/clion/phpdever
+        images: |
+          clion007/phpdever
+          registry.cn-chengdu.aliyuncs.com/clion/phpdever
+        labels: |
+          org.opencontainers.image.title=PHP Development Environment
+          org.opencontainers.image.description=PHP development environment with code analysis tools
+          org.opencontainers.image.vendor=Clion Nihe
+          org.opencontainers.image.licenses=MIT
+        tags: |
+          type=raw,value=latest
+          type=raw,value=php${{ steps.getVersion.outputs.PhpVersion }}
 
     - name: Build and Push Docker images
       id: build
