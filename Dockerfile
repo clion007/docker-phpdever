@@ -25,7 +25,7 @@ WORKDIR /tmp
 COPY deplib/cplibfiles.sh /usr/local/bin/
 ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
 ADD https://getcomposer.org/installer composer-setup.php
-ADD http://pear.php.net/go-pear.phar go-pear.php
+ADD https://pear.php.net/go-pear.phar go-pear.phar
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
