@@ -2,6 +2,10 @@
 [![Build Status](https://github.com/clion007/docker-phpdever/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/clion007/docker-phpdever/actions/workflows/docker-publish.yml)
 [![License](https://img.shields.io/github/license/clion007/docker-phpdever)](https://github.com/clion007/docker-phpdever/blob/main/LICENSE)
 ![GitHub top language](https://img.shields.io/github/languages/top/clion007/docker-phpdever)
+[![Docker Pulls](https://img.shields.io/docker/pulls/clion007/phpdever)](https://hub.docker.com/r/clion007/phpdever)
+[![Docker Image Size](https://img.shields.io/docker/image-size/clion007/phpdever/latest)](https://hub.docker.com/r/clion007/phpdever)
+[![GitHub last commit](https://img.shields.io/github/last-commit/clion007/docker-phpdever)](https://github.com/clion007/docker-phpdever/commits/main)
+[![GitHub Stars](https://img.shields.io/github/stars/clion007/docker-phpdever)](https://github.com/clion007/docker-phpdever/stargazers)
 
 This repository is a docker image based on official php, composer and my base alpine docker images to help you to build and test your PHP projects with different PHP version.
 
