@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Publish Phpdever Image
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -91,7 +91,7 @@ jobs:
         labels: |
           org.opencontainers.image.title=PHP Development Environment
           org.opencontainers.image.description=PHP development environment with code analysis tools
-          org.opencontainers.image.vendor=Clion Nihe
+          org.opencontainers.image.vendor=Clion Nihe clino007@126.com
           org.opencontainers.image.licenses=MIT
         tags: |
           type=raw,value=latest
@@ -107,6 +107,7 @@ jobs:
         build-args: |
           COMPOSER_VERSION=${{ steps.getVersion.outputs.ComposerVersion }}
           PHP_VERSION=${{ steps.getVersion.outputs.PhpVersion }}
+        labels: ${{ steps.meta.outputs.labels }}
         tags: |
           clion007/phpdever:latest
           clion007/phpdever:php${{ steps.getVersion.outputs.PhpVersion }}
