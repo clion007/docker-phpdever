@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      actions: write
 
     steps:
     - name: Checkout
@@ -138,6 +139,7 @@ jobs:
         skipIfReleaseExists: true
         
     - name: Delete workflow runs
+      if: always()
       uses: Mattraks/delete-workflow-runs@v2
       with:
         retain_days: 0
