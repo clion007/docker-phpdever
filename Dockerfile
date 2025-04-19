@@ -25,7 +25,7 @@ WORKDIR /tmp
 COPY deplib/cplibfiles.sh /usr/local/bin/
 ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
 ADD https://getcomposer.org/installer composer-setup.php
-# ADD http://pear.php.net/go-pear.phar go-pear.php
+ADD http://pear.php.net/go-pear.phar go-pear.php
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -147,8 +147,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     \
     # 安装 PEAR (用于安装 PECL 扩展)
     cd /tmp; \
-    curl -fsSL -o /tmp/go-pear.phar https://pear.php.net/go-pear.phar; \
-    ${PHP_INSTALL_DIR}/bin/php /tmp/go-pear.phar -d ${PHP_INSTALL_DIR}/pear; \
+    ${PHP_INSTALL_DIR}/bin/php /tmp/go-pear.phar -d ${PHP_INSTALL_DIR}/pear <<< $'\n'; \
     \
     # 创建 pecl 安装函数
     pecl_install() { \
@@ -265,10 +264,6 @@ RUN set -ex; \
     # 创建日志目录
     mkdir -p /config/log/php; \
     chown -R phpdever:phpdever /config/log; \
-    # 启用扩展
-    echo "extension=redis.so" > ${PHP_INSTALL_DIR}/etc/conf.d/redis.ini; \
-    echo "extension=memcached.so" > ${PHP_INSTALL_DIR}/etc/conf.d/memcached.ini; \
-    echo "zend_extension=xdebug.so" > ${PHP_INSTALL_DIR}/etc/conf.d/xdebug.ini; \
     # 配置 PHPCompatibility
     ln -s /.composer/vendor/phpcompatibility/php-compatibility /.composer/vendor/squizlabs/php_codesniffer/src/Standards/PHPCompatibility; \
     # PHP 配置优化
