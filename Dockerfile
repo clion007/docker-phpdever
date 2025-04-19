@@ -25,7 +25,7 @@ WORKDIR /tmp
 COPY deplib/cplibfiles.sh /usr/local/bin/
 ADD https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz php.tar.gz
 ADD https://getcomposer.org/installer composer-setup.php
-ADD https://pear.php.net/go-pear.phar go-pear.phar
+# ADD https://pear.php.net/go-pear.phar go-pear.phar
 
 # 安装构建依赖并编译PHP
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -34,6 +34,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     # 安装依赖
     apk add --no-cache --virtual .build-deps \
         git \
+        curl \
         alpine-sdk \
         autoconf \
         argon2-dev \
@@ -147,6 +148,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     \
     # 安装 PEAR (用于安装 PECL 扩展)
     cd /tmp; \
+    curl -fsSL -o go-pear.phar "https://pear.php.net/go-pear.phar"; \
     ${PHP_INSTALL_DIR}/bin/php /tmp/go-pear.phar -d ${PHP_INSTALL_DIR}/pear <<< $'\n'; \
     \
     # 创建 pecl 安装函数
