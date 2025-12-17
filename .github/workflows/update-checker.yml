@@ -24,7 +24,7 @@ jobs:
 
     - name: Compare versions
       id: cacheVersion
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           .phpVersion
